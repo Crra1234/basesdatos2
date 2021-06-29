@@ -324,8 +324,80 @@ BEGIN
             ADD_INSUMOS(Centro);
             ADD_DOSIS(Centro);
             PACIENTES_POR_AREA(Areas(x)(j));
+            Asignacion_lista_espera(Areas(x)(j));
         END LOOP;
     END LOOP;
 END;
 
 
+-------------PROCEDIMIENTO ASIGNACION_LISTA_ESPERA---------------------------------
+
+CREATE OR REPLACE PROCEDURE Asignacion_lista_espera(Codarea NUMBER)
+IS
+    CodPac PACIENTE.Codigo%TYPE;
+    CodCent CENTRO_VACUNACION.Codigo%TYPE;
+    CodVac VACUNA.Codigo%TYPE;
+    FechaFin Date;
+    FechaInicio Date;
+    NumAlt Number;
+    
+    -----CURSOR QUE CONTIENE LOS DATOS DE 2 PACIENTES ALEATORIOS-----
+    CURSOR Pacientes is 
+    SELECT * 
+    FROM (
+     SELECT Codigo
+     FROM PACIENTE
+     WHERE Lugar=Codarea
+     ORDER BY dbms_random.random)
+    WHERE  rownum < 3;
+
+
+BEGIN
+
+    SELECT c.Codigo INTO CodCent
+    FROM CENTRO_VACUNACION c
+    WHERE c.Lugar = CodArea;
+    
+   
+    
+    OPEN Pacientes;
+    LOOP
+        FETCH Pacientes INTO CodPac;
+        EXIT WHEN Pacientes%notfound; 
+        
+        --Se selecciona una vacuna aleatoria que dispone el centro de vacunacion del area--
+        SELECT * INTO CodVac
+        FROM (
+        
+        SELECT d.Vacuna
+        FROM Dosis d
+        WHERE d.Centro=CodCent 
+        ORDER BY dbms_random.random
+        
+        )
+        WHERE rownum<2;
+        
+        
+        --Se selecciona aleatoriamente una fecha de inicio antes de marzo, para la vacunacion--
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-01-01','J'),TO_CHAR(DATE '2021-03-01','J'))),'J') 
+        INTO FechaInicio
+        FROM DUAL;
+        
+        --Se selecciona aleatoriamente una fecha fin antes de Junio, que dependiendo de NUMALT, sera null o una fecha tipo DATE--
+        SELECT DBMS_RANDOM.value(0,1) INTO NumAlt
+        FROM dual;
+        IF (NumAlt = 1) THEN
+            SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-04-01','J'),TO_CHAR(DATE '2021-06-01','J'))),'J') 
+            INTO FechaFin
+            FROM DUAL;
+        ELSE
+            FechaFin := NULL;
+        END IF;
+        
+        -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
+        INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaInicio,FechaFin));
+
+
+    END LOOP;
+    CLOSE Pacientes;
+END;
