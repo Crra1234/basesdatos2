@@ -1,0 +1,1 @@
+INSERT INTO VIRUS VALUES(1,'COVID-19','Virus muy contagioso que puede ser sintomatico o asintomatico. Mucho riesgo para personas mayores.');
