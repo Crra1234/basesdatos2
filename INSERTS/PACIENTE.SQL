@@ -1,4 +1,4 @@
-INSERT INTO PACIENTE VALUES (1, 25863290, 'Yorgos', 'Laraine', 'Dundredge', 'Talton',TO_DATE('25/03/1973','DD/MM/YYYY'),'ADULTO', 323);
+INSERT INTO PACIENTE VALUES (1, 25863290, 'Yorgos', 'Laraine', 'Dundredge', 'Talton',TO_DATE('25/03/1973','DD/MM/YYYY'),'ADULTO', NULL);
 INSERT INTO PACIENTE VALUES (2, 19305001, 'Emmett', 'Erhart', 'Engley', 'Belfit',TO_DATE('18/08/1962','DD/MM/YYYY'),'ADULTO', 181);
 INSERT INTO PACIENTE VALUES (3, 24897168, 'Dorree', 'Daphne', 'Bootyman', 'Mitham',TO_DATE('19/05/2007','DD/MM/YYYY'),'JOVEN', 224);
 INSERT INTO PACIENTE VALUES (4, 25707856, 'Ynez', 'Gino', 'Arnold', 'Haggarty',TO_DATE('27/11/1954','DD/MM/YYYY'),'ANCIANO', 355);
