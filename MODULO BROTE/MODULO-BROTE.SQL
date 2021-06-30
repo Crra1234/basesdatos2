@@ -1,4 +1,3 @@
-
 ------------------------------------  INFECTAR PAISES  ---------------------------------
 
 CREATE OR REPLACE PROCEDURE INFECTAR_PAISES
@@ -50,10 +49,13 @@ IS
      ORDER BY dbms_random.random)
     WHERE  rownum < 3;
 BEGIN
+
     OPEN Areas;
+    --DBMS_OUTPUT.PUT_LINE(CodArea);
     LOOP
         FETCH Areas INTO CodArea;
         EXIT WHEN Areas%notfound; 
+        --DBMS_OUTPUT.PUT_LINE(CodArea);
         SELECT Codigo INTO Infeccion FROM VIRUS;
 
         --SE AGREGA UNA FECHA ALEATORIA EN LA QUE SE ORIGINARÁ
@@ -70,7 +72,7 @@ BEGIN
         INSERT INTO BROTE VALUES(Infeccion,CodArea,Fecha(FechaInicio,FechaFin));
 
         --SE LE ASIGNA EL AREA A ALGUNOS PACIENTES
-        PACIENTE_POR_AREA(CodArea);
+        PACIENTES_POR_AREA(CodArea);
     
     END LOOP;
     CLOSE Areas;
@@ -108,3 +110,66 @@ BEGIN
     CLOSE Pacientes;
 END;
 
+
+-------------PROCEDIMIENTO INFECTAR 45% DE LOS PACIENTES DEL AREA ---------------------------------
+
+CREATE OR REPLACE PROCEDURE INFECTAR_PACIENTES (Area NUMBER)
+IS
+    CodPac PACIENTE.Codigo%TYPE;
+    Infeccion NUMBER;
+    FechaInicio Date;
+    Rango Date;
+    
+    -----CURSOR QUE CONTIENE LOS DATOS DE TODOS LOS PACIENTES DE UN AREA
+    CURSOR Pacientes is 
+    SELECT * 
+    FROM (
+     SELECT Codigo
+     FROM PACIENTE
+     WHERE Lugar = Area
+     ORDER BY dbms_random.random)
+    WHERE rownum < 3;
+    
+BEGIN
+    OPEN Pacientes;
+    
+    LOOP
+        FETCH Pacientes INTO CodPac;
+        EXIT WHEN Pacientes%notfound;
+        
+        SELECT Codigo INTO Infeccion FROM VIRUS;
+        
+        --SELECCIONA EL PERIODO DE INFECCION
+        SELECT Periodo INTO Rango
+        FROM BROTE
+        WHERE Lugar = Area;
+        
+        --SE AGREGA UNA FECHA ALEATORIA EN LA QUE SE ORIGINARÁ
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(Rango.Fecha_inicio,Periodo.Fecha_inicio)))
+        INTO FechaInicio
+        FROM dual;
+        
+        -----ASIGNACION DE LA INFECCION AL LOS PACIENTES
+        --INSERT INTO INFECCION VALUES(Infeccion, Area, CodPac, Fecha(FechaInicio);
+        
+    END LOOP;
+    CLOSE Pacientes;
+END;
+
+SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')
+        --INTO FechaInicio
+        FROM dual;
+
+
+
+
+
+EXECUTE INFECTAR_PAISES;
+
+SELECT * FROM PACIENTE;
+SELECT * FROM BROTE;
+
+DELETE FROM BROTE;
+
+UPDATE PACIENTE
+SET Lugar = NULL;
