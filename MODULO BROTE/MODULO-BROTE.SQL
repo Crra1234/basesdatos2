@@ -1,3 +1,4 @@
+
 ------------------------------------  INFECTAR PAISES  ---------------------------------
 
 CREATE OR REPLACE PROCEDURE INFECTAR_PAISES
@@ -49,13 +50,10 @@ IS
      ORDER BY dbms_random.random)
     WHERE  rownum < 3;
 BEGIN
-
     OPEN Areas;
-    --DBMS_OUTPUT.PUT_LINE(CodArea);
     LOOP
         FETCH Areas INTO CodArea;
         EXIT WHEN Areas%notfound; 
-        --DBMS_OUTPUT.PUT_LINE(CodArea);
         SELECT Codigo INTO Infeccion FROM VIRUS;
 
         --SE AGREGA UNA FECHA ALEATORIA EN LA QUE SE ORIGINARÁ
@@ -73,6 +71,12 @@ BEGIN
 
         --SE LE ASIGNA EL AREA A ALGUNOS PACIENTES
         PACIENTES_POR_AREA(CodArea);
+        
+        --SE LE ASIGNA EL CENTRO DE VACUNACION AL AREA
+        ASIGNAR_CENTRO(CodArea);
+        
+        --SE INFECTA AL 45% DE LOS PACIENTES DEL AREA
+        INFECTAR_PACIENTES(CodArea);
     
     END LOOP;
     CLOSE Areas;
@@ -111,6 +115,7 @@ BEGIN
 END;
 
 
+
 -------------PROCEDIMIENTO INFECTAR 45% DE LOS PACIENTES DEL AREA ---------------------------------
 
 CREATE OR REPLACE PROCEDURE INFECTAR_PACIENTES (Area NUMBER)
@@ -118,7 +123,7 @@ IS
     CodPac PACIENTE.Codigo%TYPE;
     Infeccion NUMBER;
     FechaInicio Date;
-    Rango Date;
+    Rango Fecha;
     
     -----CURSOR QUE CONTIENE LOS DATOS DE TODOS LOS PACIENTES DE UN AREA
     CURSOR Pacientes is 
@@ -145,31 +150,70 @@ BEGIN
         WHERE Lugar = Area;
         
         --SE AGREGA UNA FECHA ALEATORIA EN LA QUE SE ORIGINARÁ
-        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(Rango.Fecha_inicio,Periodo.Fecha_inicio)))
+        --SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(Rango.Fecha_inicio,Periodo.Fecha_inicio)))
+        --INTO FechaInicio
+        --FROM dual;
+        
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(Rango.Fecha_inicio,'J'),TO_CHAR(Rango.Fecha_fin,'J'))),'J')
         INTO FechaInicio
         FROM dual;
         
         -----ASIGNACION DE LA INFECCION AL LOS PACIENTES
-        --INSERT INTO INFECCION VALUES(Infeccion, Area, CodPac, Fecha(FechaInicio);
+        INSERT INTO INFECCION VALUES(Infeccion, Area, CodPac, Fecha(FechaInicio,null));
         
     END LOOP;
     CLOSE Pacientes;
 END;
 
-SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')
-        --INTO FechaInicio
-        FROM dual;
 
 
+-------------PROCEDIMIENTO QUE ASIGNA UN CENTRO ALEATORIO A UN AREA CORRESPONDIENTE---------------------------------
 
+CREATE OR REPLACE PROCEDURE ASIGNAR_CENTRO(Area NUMBER)
+IS
+    CodCent CENTRO_VACUNACION.Codigo%TYPE;
+    
+    -----CURSOR QUE CONTIENE LOS DATOS DE UN CENTRO DE VACUNACION ALEATORIO, QUE NO TENGA AREA ASIGNADA
+    CURSOR Centros is 
+    SELECT * 
+    FROM (
+     SELECT Codigo
+     FROM CENTRO_VACUNACION
+     WHERE Lugar = 1
+     ORDER BY dbms_random.random)
+    WHERE  rownum < 2;
+BEGIN
+    OPEN Centros;
+    LOOP
+        FETCH Centros INTO CodCent;
+        EXIT WHEN Centros%notfound; 
+    
+        -----ASIGNACION DEL AREA AL CENTRO DE VACUNACION ELEGIDO DE FORMA ALEATORIA
+        UPDATE CENTRO_VACUNACION 
+        SET Lugar = Area
+        WHERE Codigo = CodCent;
+    
+    END LOOP;
+    CLOSE Centros;
+END;
 
-
-EXECUTE INFECTAR_PAISES;
-
-SELECT * FROM PACIENTE;
-SELECT * FROM BROTE;
+--------REINICIAR LA SIMULACION--------------
 
 DELETE FROM BROTE;
 
 UPDATE PACIENTE
 SET Lugar = NULL;
+
+UPDATE CENTRO_VACUNACION
+SET Lugar = 1;
+
+
+------COMPROBACIONES--------------------
+
+SELECT * FROM PACIENTE;
+
+SELECT b.Virus,b.Lugar,b.Periodo.Fecha_inicio,b.Periodo.Fecha_fin FROM BROTE b;
+
+SELECT i.Virus,i.Lugar,i.Paciente,i.Periodo.Fecha_inicio,i.Periodo.Fecha_fin FROM INFECCION i;
+
+SELECT * FROM CENTRO_VACUNACION;

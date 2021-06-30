@@ -280,7 +280,7 @@ IS
     FechaInicio Date;
     NumAlt Number;
     
-    -----CURSOR QUE CONTIENE LOS DATOS DE 2 PACIENTES ALEATORIOS-----
+    -----CURSOR QUE CONTIENE LOS DATOS DE UN PACIENTES ALEATORIO CORRESPONDIENTE AL AREA (EQUIVALENTE AL 25% DE LOS HABITANTES DE ESA AREA) -----
     CURSOR Pacientes is 
     SELECT * 
     FROM (
@@ -307,34 +307,22 @@ BEGIN
         --Se selecciona una vacuna aleatoria que dispone el centro de vacunacion del area--
         SELECT * INTO CodVac
         FROM (
-        
         SELECT d.Vacuna
         FROM Dosis d
         WHERE d.Centro=CodCent 
         ORDER BY dbms_random.random
-        
         )
         WHERE rownum<2;
         
-        
-        --Se selecciona aleatoriamente una fecha de inicio antes de marzo, para la vacunacion--
-        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-01-01','J'),TO_CHAR(DATE '2021-03-01','J'))),'J') 
+   
+        --SE SELECCIONO ALEATORIAMENTE UNA FECHA EN EL INTERVALO EN EL QUE FINALIZO EL BROTE EN EL AREA, PARA LA VACUNACION--
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J') 
         INTO FechaInicio
         FROM DUAL;
         
-        --Se selecciona aleatoriamente una fecha fin antes de Junio, que dependiendo de NUMALT, sera null o una fecha tipo DATE--
-        SELECT DBMS_RANDOM.value(0,1) INTO NumAlt
-        FROM dual;
-        IF (NumAlt = 1) THEN
-            SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-04-01','J'),TO_CHAR(DATE '2021-06-01','J'))),'J') 
-            INTO FechaFin
-            FROM DUAL;
-        ELSE
-            FechaFin := NULL;
-        END IF;
         
         -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
-        INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaInicio,FechaFin));
+        INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaInicio,null));
 
 
     END LOOP;
