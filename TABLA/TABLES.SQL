@@ -53,7 +53,7 @@ CREATE TABLE VIRUS(
 
 CREATE TABLE INSUMO(
     Codigo NUMBER PRIMARY KEY,
-    Nombre VARCHAR2(20) NOT NULL,
+    Nombre VARCHAR2(50) NOT NULL,
     Tipo VARCHAR2(20) NOT NULL,
     CONSTRAINT Check_Tipo_Insumo CHECK (Tipo IN ('Guantes','Jeringas', 'Alcohol', 'Algodon'))
 );
@@ -88,7 +88,7 @@ CREATE TABLE VARIANTE(
 CREATE TABLE BROTE (
     Virus NUMBER NOT NULL,
     Lugar NUMBER NOT NULL,
-    Periodo FECHA,
+    Periodo FECHA,  
     CONSTRAINT PK_Brote PRIMARY KEY (Virus,Lugar),
     CONSTRAINT FK_Virus FOREIGN KEY (Virus) REFERENCES VIRUS(Codigo),
     CONSTRAINT FK_Brote_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo)
@@ -107,7 +107,7 @@ CREATE TABLE EXCLUSION(
     Periodo Fecha,
     CONSTRAINT PK_Exclusion PRIMARY KEY (Restriccion,Lugar),
     CONSTRAINT FK_Restriccion FOREIGN KEY (Restriccion) REFERENCES RESTRICCION_LOCAL(Codigo),
-    CONSTRAINT FK_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo)
+    CONSTRAINT FK_Excusion_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo)
 );
 
 
@@ -167,6 +167,8 @@ CREATE TABLE ORGANIZACION(
 CREATE TABLE VA_OR(
     Vacuna NUMBER NOT NULL,
     Organizacion NUMBER NOT NULL,
+    Creacion FECHA,
+    Aprobacion FECHA,
     CONSTRAINT PK_VA_OR PRIMARY KEY (Vacuna,Organizacion),
     CONSTRAINT FK_VAOR_Vacuna FOREIGN KEY (Vacuna) REFERENCES VACUNA(Codigo),
     CONSTRAINT FK_Organizacion FOREIGN KEY (Organizacion) REFERENCES ORGANIZACION(Codigo)
@@ -202,6 +204,7 @@ CREATE TABLE PAGO(
     Lugar NUMBER NOT NULL,
     Organizacion NUMBER NOT NULL,
     Codigo NUMBER NOT NULL,
+    Periodo FECHA,
     Monto NUMBER NOT NULL,
     CONSTRAINT PK_Pago PRIMARY KEY (Lugar,Organizacion,Codigo),
     CONSTRAINT FK_Pago_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo),

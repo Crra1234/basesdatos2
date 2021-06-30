@@ -7,12 +7,12 @@ INSERT INTO INSUMO VALUES (6, 'Alve', 'Algodon');
 INSERT INTO INSUMO VALUES (7, 'Medispo', 'Algodon');
 INSERT INTO INSUMO VALUES (8, 'Algodon hidrofilo', 'Algodon');
 INSERT INTO INSUMO VALUES (9, 'Sterille Latex', 'Guantes');
-INSERT INTO INSUMO VALUES (10, 'Twinrix', 'Jeringa');
-INSERT INTO INSUMO VALUES (11, 'BD Ultra-Fine', 'Jeringa');
-INSERT INTO INSUMO VALUES (12, 'Clexane', 'Jeringa');
+INSERT INTO INSUMO VALUES (10, 'Twinrix', 'Jeringas');
+INSERT INTO INSUMO VALUES (11, 'BD Ultra-Fine', 'Jeringas');
+INSERT INTO INSUMO VALUES (12, 'Clexane', 'Jeringas');
 INSERT INTO INSUMO VALUES (13, 'Masglo', 'Alcohol');
 INSERT INTO INSUMO VALUES (14, 'Alcohol Isopropílico', 'Alcohol');
-INSERT INTO INSUMO VALUES (15, 'Clenox', 'Jeringa');
+INSERT INTO INSUMO VALUES (15, 'Clenox', 'Jeringas');
 
 
 CREATE TABLE INVENTARIO(

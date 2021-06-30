@@ -341,35 +341,7 @@ BEGIN
     CLOSE Pacientes;
 END;
 
----------------PROCEDIMIENTO DE CENTROS POR AREA--------------------------
-
-CREATE OR REPLACE PROCEDURE CENTRO_POR_AREA
-IS
-    Areas varrays2:=varrays2();
-    Centros varrays:= varrays();
-    counter NUMBER :=0; 
-    counter2 NUMBER :=0; 
-    Centro NUMBER;
-BEGIN
-    Areas:= AREAS_AFECTADAS;
-    DBMS_OUTPUT.PUT_LINE('                                                  ');
-    DBMS_OUTPUT.PUT_LINE('------------------CENTROS DE VACUNACIÓN--------------------------');
-    FOR x IN 1..Areas.COUNT LOOP
-        FOR j IN 1..Areas(x).COUNT LOOP
-            counter:= counter +1;
-            Centros.extend;
-            Centro:=SELECCION_CENTRO(Areas(x)(j));
-            Centros(counter):= Centro;
-            ADD_INSUMOS(Centro);
-            ADD_DOSIS(Centro);
-            PACIENTES_POR_AREA(Areas(x)(j));
-            Asignacion_lista_espera(Areas(x)(j));
-        END LOOP;
-    END LOOP;
-END;
-
-
-
+--Procedumiento de asignacion de fechas (Y vacunacion) de los pacientes--
 CREATE OR REPLACE PROCEDURE Asignacion_Vacunacion(Codarea NUMBER)
 IS
     CodPac PACIENTE.Codigo%TYPE;
@@ -407,8 +379,8 @@ BEGIN
         
         
         --Se verifica si el paciente ya esta asignado a una lista de espera--
-        IF (NumAlt=-1) THEN
-            select * into codcent from CENTRO_VACUNACION;
+        IF (NumAlt = -1) THEN
+            select codigo into codcent from CENTRO_VACUNACION;
         
         ELSE
             
@@ -431,7 +403,7 @@ BEGIN
                 WHERE rownum<2;
                 
                 --Se checkea si existe la vacuna con la cual se quiere vacunar el paciente--
-                SELECT d.Cant_real INTO NumAlt
+                SELECT d.Cantidad.Cant_real INTO NumAlt
                 FROM Dosis d
                 WHERE
                 d.Centro=CodCent
@@ -472,17 +444,21 @@ BEGIN
             
             END IF;
             
+                NumAlt:=-1;
+                SELECT I.Paciente into NumAlt
+                FROM INFECCION I WHERE I.Paciente=CodPac;
+            
             --Se establecen las prioridades en el variable de preferencia, si esta infectado se vacuna en menos de un mes, si es anciano, se vacuna en un mes, si es adulto, se vacuna en 2 meses, y si es joven, en 3 meses.
-            IF EXISTS(SELECT * FROM INFECCION I WHERE I.INFECCION=CodPac) THEN
+            IF (NumAlt = -1) THEN
                 Preferencia := 0;
             ELSE
-                SELECT p.GRUPO_ETARIO into Grupo_etario
-                from Paciente
-                where Paciente = CodPac;
+                SELECT p.GRUPO_ETARIO into Grupoetario
+                from Paciente p
+                where p.Codigo = CodPac;
                 
-                IF (Grupo_etario = 'ANCIANO') THEN
+                IF (Grupoetario = 'ANCIANO') THEN
                    Preferencia := 1;
-                ELSIF (GRUPO_ETARIO = 'ADULTO') THEN
+                ELSIF (Grupoetario = 'ADULTO') THEN
                     Preferencia := 2;
                 ELSE 
                     Preferencia := 3;
@@ -506,3 +482,34 @@ BEGIN
     END LOOP;
     CLOSE Pacientes;
 END;
+
+---------------PROCEDIMIENTO DE CENTROS POR AREA--------------------------
+
+CREATE OR REPLACE PROCEDURE CENTRO_POR_AREA
+IS
+    Areas varrays2:=varrays2();
+    Centros varrays:= varrays();
+    counter NUMBER :=0; 
+    counter2 NUMBER :=0; 
+    Centro NUMBER;
+BEGIN
+    Areas:= AREAS_AFECTADAS;
+    DBMS_OUTPUT.PUT_LINE('                                                  ');
+    DBMS_OUTPUT.PUT_LINE('------------------CENTROS DE VACUNACIÓN--------------------------');
+    FOR x IN 1..Areas.COUNT LOOP
+        FOR j IN 1..Areas(x).COUNT LOOP
+            counter:= counter +1;
+            Centros.extend;
+            Centro:=SELECCION_CENTRO(Areas(x)(j));
+            Centros(counter):= Centro;
+            ADD_INSUMOS(Centro);
+            ADD_DOSIS(Centro);
+            PACIENTES_POR_AREA(Areas(x)(j));
+            Asignacion_lista_espera(Areas(x)(j));
+            Asignacion_Vacunacion(Areas(x)(j));
+        END LOOP;
+    END LOOP;
+END;
+
+
+
