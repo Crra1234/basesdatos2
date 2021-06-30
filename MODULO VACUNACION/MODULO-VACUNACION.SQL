@@ -320,7 +320,7 @@ IS
      FROM PACIENTE
      WHERE Lugar=Codarea
      ORDER BY dbms_random.random)
-    WHERE  rownum < 3;
+    WHERE  rownum < 2;
 
 
 BEGIN
@@ -402,3 +402,139 @@ END;
 
 
 
+CREATE OR REPLACE PROCEDURE Asignacion_Vacunacion(Codarea NUMBER)
+IS
+    CodPac PACIENTE.Codigo%TYPE;
+    CodCent CENTRO_VACUNACION.Codigo%TYPE;
+    CodVac VACUNA.Codigo%TYPE;
+    GrupoEtario PACIENTE.Grupo_Etario%TYPE;
+    FechaVac Date;
+    NumAlt Number;
+    Preferencia Number;
+    
+    
+    -----CURSOR QUE CONTIENE LOS DATOS LOS PACIENTES DEL AREA SUMINISTRADA-----
+    CURSOR Pacientes is 
+    SELECT * 
+    FROM (
+     SELECT Codigo
+     FROM PACIENTE
+     WHERE Lugar=Codarea
+     ORDER BY dbms_random.random);
+
+
+BEGIN
+    SELECT c.Codigo INTO CodCent
+    FROM CENTRO_VACUNACION c
+    WHERE c.Lugar = CodArea;
+    
+    OPEN Pacientes;
+    LOOP
+        FETCH Pacientes INTO CodPac;
+        EXIT WHEN Pacientes%notfound; 
+        
+        NumAlt:=-1;
+        SELECT V.Paciente INTO NumAlt
+        FROM VACUNACION V WHERE V.Paciente=CodPac;
+        
+        
+        --Se verifica si el paciente ya esta asignado a una lista de espera--
+        IF (NumAlt=-1) THEN
+            select * into codcent from CENTRO_VACUNACION;
+        
+        ELSE
+            
+            --Se selecciona aleatoriamente si el paciente tiene preferencia o no, 1 siginifica que si tiene, 0 significa lo contrario--
+            SELECT DBMS_RANDOM.value(0,1) INTO Preferencia
+            FROM dual;
+            
+            IF (Preferencia = 1) then
+            
+                --Se selecciona aleatoriametne la vacuna que quiere el paciente--
+                SELECT * INTO CodVac
+                FROM (
+                
+                SELECT d.Vacuna
+                FROM Dosis d
+                WHERE 
+                d.Centro=CodCent 
+                ORDER BY dbms_random.random
+                )
+                WHERE rownum<2;
+                
+                --Se checkea si existe la vacuna con la cual se quiere vacunar el paciente--
+                SELECT d.Cant_real INTO NumAlt
+                FROM Dosis d
+                WHERE
+                d.Centro=CodCent
+                AND
+                d.vacuna = CodVac;
+                
+                --Si numalt = 0, se le reasigna al paciente una fecha de programacion aleatoria dentro de 4 meses a partir de la fecha del sistema.
+
+                IF (NumAlt = 0) THEN
+                
+                    SELECT DBMS_RANDOM.value(1,27) INTO NumAlt
+                    FROM dual;
+                    
+                    FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 4);
+                    
+                    INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,FechaVac));
+                    INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
+                    CONTINUE;
+                    
+                END IF;
+
+            ELSE
+            
+                --Se selecciona una vacuna aleatoria que dispone el centro de vacunacion del area--
+                SELECT * INTO CodVac
+                FROM (
+                
+                SELECT d.Vacuna
+                FROM Dosis d
+                WHERE 
+                d.Centro=CodCent 
+                and 
+                (d.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random
+                
+                )
+                WHERE rownum<2;
+            
+            END IF;
+            
+            --Se establecen las prioridades en el variable de preferencia, si esta infectado se vacuna en menos de un mes, si es anciano, se vacuna en un mes, si es adulto, se vacuna en 2 meses, y si es joven, en 3 meses.
+            IF EXISTS(SELECT * FROM INFECCION I WHERE I.INFECCION=CodPac) THEN
+                Preferencia := 0;
+            ELSE
+                SELECT p.GRUPO_ETARIO into Grupo_etario
+                from Paciente
+                where Paciente = CodPac;
+                
+                IF (Grupo_etario = 'ANCIANO') THEN
+                   Preferencia := 1;
+                ELSIF (GRUPO_ETARIO = 'ADULTO') THEN
+                    Preferencia := 2;
+                ELSE 
+                    Preferencia := 3;
+                END IF;
+                        
+                    END IF;
+                    
+                    SELECT DBMS_RANDOM.value(0,27) INTO NumAlt
+                    FROM dual;
+                    
+                    --Se asigna la FechaVAC la cual sera la fecha de vacunacion del paciente--
+                    FechaVac := ADD_MONTHS(SYSDATE + NumAlt, Preferencia);
+                
+        
+            -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
+            INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,FechaVac));
+            INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
+            
+        END IF;
+
+    END LOOP;
+    CLOSE Pacientes;
+END;
