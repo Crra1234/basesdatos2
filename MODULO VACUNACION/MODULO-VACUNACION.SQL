@@ -301,35 +301,6 @@ BEGIN
     CLOSE Pacientes;
 END;
 
-
----------------PROCEDIMIENTO DE CENTROS POR AREA--------------------------
-
-CREATE OR REPLACE PROCEDURE CENTRO_POR_AREA
-IS
-    Areas varrays2:=varrays2();
-    Centros varrays:= varrays();
-    counter NUMBER :=0; 
-    counter2 NUMBER :=0; 
-    Centro NUMBER;
-BEGIN
-    Areas:= AREAS_AFECTADAS;
-    DBMS_OUTPUT.PUT_LINE('                                                  ');
-    DBMS_OUTPUT.PUT_LINE('------------------CENTROS DE VACUNACIÓN--------------------------');
-    FOR x IN 1..Areas.COUNT LOOP
-        FOR j IN 1..Areas(x).COUNT LOOP
-            counter:= counter +1;
-            Centros.extend;
-            Centro:=SELECCION_CENTRO(Areas(x)(j));
-            Centros(counter):= Centro;
-            ADD_INSUMOS(Centro);
-            ADD_DOSIS(Centro);
-            PACIENTES_POR_AREA(Areas(x)(j));
-            Asignacion_lista_espera(Areas(x)(j));
-        END LOOP;
-    END LOOP;
-END;
-
-
 -------------PROCEDIMIENTO ASIGNACION_LISTA_ESPERA---------------------------------
 
 CREATE OR REPLACE PROCEDURE Asignacion_lista_espera(Codarea NUMBER)
@@ -401,3 +372,33 @@ BEGIN
     END LOOP;
     CLOSE Pacientes;
 END;
+
+---------------PROCEDIMIENTO DE CENTROS POR AREA--------------------------
+
+CREATE OR REPLACE PROCEDURE CENTRO_POR_AREA
+IS
+    Areas varrays2:=varrays2();
+    Centros varrays:= varrays();
+    counter NUMBER :=0; 
+    counter2 NUMBER :=0; 
+    Centro NUMBER;
+BEGIN
+    Areas:= AREAS_AFECTADAS;
+    DBMS_OUTPUT.PUT_LINE('                                                  ');
+    DBMS_OUTPUT.PUT_LINE('------------------CENTROS DE VACUNACIÓN--------------------------');
+    FOR x IN 1..Areas.COUNT LOOP
+        FOR j IN 1..Areas(x).COUNT LOOP
+            counter:= counter +1;
+            Centros.extend;
+            Centro:=SELECCION_CENTRO(Areas(x)(j));
+            Centros(counter):= Centro;
+            ADD_INSUMOS(Centro);
+            ADD_DOSIS(Centro);
+            PACIENTES_POR_AREA(Areas(x)(j));
+            Asignacion_lista_espera(Areas(x)(j));
+        END LOOP;
+    END LOOP;
+END;
+
+
+
