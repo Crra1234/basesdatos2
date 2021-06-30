@@ -69,13 +69,42 @@ BEGIN
         --REGISTRAR LA INFECCION EN BROTE
         INSERT INTO BROTE VALUES(Infeccion,CodArea,Fecha(FechaInicio,FechaFin));
 
+        --SE LE ASIGNA EL AREA A ALGUNOS PACIENTES
+        PACIENTE_POR_AREA(CodArea);
     
     END LOOP;
     CLOSE Areas;
 END;
 
-EXECUTE INFECTAR_PAISES;
 
-DELETE FROM  BROTE;
 
-SELECT * FROM BROTE;
+-------------PROCEDIMIENTO PACIENTES ALEATORIOS POR AREA---------------------------------
+
+CREATE OR REPLACE PROCEDURE PACIENTES_POR_AREA(Area NUMBER)
+IS
+    CodPac PACIENTE.Codigo%TYPE;
+    
+    -----CURSOR QUE CONTIENE LOS DATOS DE 5 PACIENTES ALEATORIOS, QUE NO TENGAN AREA ASIGNADA
+    CURSOR Pacientes is 
+    SELECT * 
+    FROM (
+     SELECT Codigo
+     FROM PACIENTE
+     WHERE Lugar is NULL
+     ORDER BY dbms_random.random)
+    WHERE  rownum < 6;
+BEGIN
+    OPEN Pacientes;
+    LOOP
+        FETCH Pacientes INTO CodPac;
+        EXIT WHEN Pacientes%notfound; 
+    
+        -----ASIGNACION DEL AREA A ESOS 5 PACIENTES ALEATORIOS
+        UPDATE PACIENTE 
+        SET Lugar = Area
+        WHERE Codigo = CodPac;
+    
+    END LOOP;
+    CLOSE Pacientes;
+END;
+

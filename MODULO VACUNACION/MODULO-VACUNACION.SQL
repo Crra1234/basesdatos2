@@ -269,38 +269,6 @@ BEGIN
     
 END;
 
-
-
--------------PROCEDIMIENTO PACIENTES ALEATORIOS POR AREA---------------------------------
-
-CREATE OR REPLACE PROCEDURE PACIENTES_POR_AREA(Area NUMBER)
-IS
-    CodPac PACIENTE.Codigo%TYPE;
-    
-    -----CURSOR QUE CONTIENE LOS DATOS DE 5 PACIENTES ALEATORIOS, QUE NO TENGAN AREA ASIGNADA
-    CURSOR Pacientes is 
-    SELECT * 
-    FROM (
-     SELECT Codigo
-     FROM PACIENTE
-     WHERE Lugar is NULL
-     ORDER BY dbms_random.random)
-    WHERE  rownum < 6;
-BEGIN
-    OPEN Pacientes;
-    LOOP
-        FETCH Pacientes INTO CodPac;
-        EXIT WHEN Pacientes%notfound; 
-    
-        -----ASIGNACION DEL AREA A ESOS 5 PACIENTES ALEATORIOS
-        UPDATE PACIENTE 
-        SET Lugar = Area
-        WHERE Codigo = CodPac;
-    
-    END LOOP;
-    CLOSE Pacientes;
-END;
-
 -------------PROCEDIMIENTO ASIGNACION_LISTA_ESPERA---------------------------------
 
 CREATE OR REPLACE PROCEDURE Asignacion_lista_espera(Codarea NUMBER)

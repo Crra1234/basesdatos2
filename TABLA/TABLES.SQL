@@ -115,6 +115,7 @@ CREATE TABLE INFECCION (
     Virus NUMBER NOT NULL,
     Lugar NUMBER NOT NULL,
     Paciente NUMBER NOT NULL,
+    Periodo Fecha,
     CONSTRAINT PK_Infeccion PRIMARY KEY (Virus,Lugar,Paciente),
     CONSTRAINT FK_Infeccion_Virus FOREIGN KEY (Virus) REFERENCES VIRUS(Codigo),
     CONSTRAINT FK_Infeccion_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo),
