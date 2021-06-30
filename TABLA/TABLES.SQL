@@ -186,12 +186,14 @@ CREATE TABLE PEDIDO(
     Estatus VARCHAR2(20) NOT NULL,
     Insumo NUMBER,
     Vacuna NUMBER,
+    Periodo FECHA,
     CONSTRAINT PK_Pedido PRIMARY KEY (Organizacion,Lugar),
     CONSTRAINT FK_Pedido_Organizacion FOREIGN KEY (Organizacion) REFERENCES ORGANIZACION(Codigo),
     CONSTRAINT FK_Pedido_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo),
     CONSTRAINT FK_Pedido_Insumo FOREIGN KEY (Insumo) REFERENCES INSUMO(Codigo),
     CONSTRAINT FK_Pedido_Vacuna FOREIGN KEY (Vacuna) REFERENCES VACUNA(Codigo),
     CONSTRAINT Check_Pedido CHECK ((Insumo IS NOT NULL AND Vacuna IS NULL) OR (Vacuna IS NOT NULL AND Insumo IS NULL))
+    CONSTRAINT Check_Estatus CHECK (Estatus in ('EN PROCESO','ENVIADO','CANCELADO'))
 );
 
 CREATE TABLE PAGO(
