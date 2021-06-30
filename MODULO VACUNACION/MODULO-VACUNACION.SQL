@@ -148,11 +148,11 @@ BEGIN
     
     --Si es 0, es insumo. En caso contrario, es suministro--
     IF (FLAG = 0) THEN
-        INSERT INTO PEDIDO VALUES (Suministro,null,Organizacion,Lugar,MontTotal,Fecha(SYSDATE,SYSDATE),Existencia(Canti,Canti));
+        INSERT INTO PEDIDO VALUES (Lugar,Organizacion,MontTotal,'ENVIADO',Suministro,null,Fecha(SYSDATE,SYSDATE),Existencia(Canti,Canti));
     ELSE 
-        INSERT INTO PEDIDO VALUES (null,Suministro,Organizacion,Lugar,MontTotal,Fecha(SYSDATE,SYSDATE),Existencia(Canti,Canti));
+        INSERT INTO PEDIDO VALUES (Lugar,Organizacion,MontTotal,'ENVIADO',null,Suministro,Fecha(SYSDATE,SYSDATE),Existencia(Canti,Canti));
      END IF;
-END;
+END
 
 
 
