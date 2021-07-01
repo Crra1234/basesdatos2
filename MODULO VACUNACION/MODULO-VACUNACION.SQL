@@ -135,15 +135,20 @@ BEGIN
     
     --Si es 0, es insumo. En caso contrario, es suministro--
     IF (FLAG = 1) THEN
-        SELECT v.Organizacion 
-        INTO Organizacion 
-        FROM VA_OR v 
-        WHERE v.Vacuna=Suministro;
-    ELSE 
-        SELECT Codigo 
+        SELECT  * FROM(
+            SELECT  v.Organizacion 
+            FROM VA_OR v 
+            WHERE v.Vacuna=Suministro
+            ORDER BY dbms_random.random)
         INTO Organizacion
-        FROM ORGANIZACION
-        ORDER BY dbms_random.random;
+        ROWNUM <2;
+    ELSE 
+        SELECT * FROM(
+            SELECT Codigo 
+            FROM ORGANIZACION
+            ORDER BY dbms_random.random)
+        INTO Organizacion
+        ROWNUM <2;
     END IF;
     
     --Si es 0, es insumo. En caso contrario, es suministro--
@@ -228,6 +233,7 @@ IS
     FROM INSUMO;
     
 BEGIN
+    DBMS_OUTPUT.PUT_LINE('-->Centro de Vacunacion: "' || Centro );
     ------QUERY REFERENTE A LA CAPACIDAD DEL CENTRO
     SELECT c.Capacidad INTO Capacid
     FROM CENTRO_VACUNACION c
@@ -365,7 +371,7 @@ BEGIN
         SELECT V.Paciente INTO NumAlt
         FROM VACUNACION V WHERE V.Paciente=CodPac;
         
-        
+        DBMS_OUTPUT.PUT_LINE('---------------------PACIENTES VACUNADOS------------------------');
         --Se verifica si el paciente ya esta asignado a una lista de espera--
         IF (NumAlt = -1) THEN
             select codigo into codcent from CENTRO_VACUNACION;
