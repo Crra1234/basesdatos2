@@ -41,7 +41,7 @@ CREATE TABLE VACUNA (
     Efectividad NUMBER NOT NULL,
     Fase VARCHAR2(40) NOT NULL,
     Temperatura VARCHAR2(20) NOT NULL,
-    Instrucciones_Especiales VARCHAR2(100) NOT NULL
+    Instrucciones_Especiales VARCHAR2(500) NOT NULL
 );
 
 
@@ -135,7 +135,7 @@ CREATE TABLE VACUNACION (
 CREATE TABLE EFECTO_SECUNDARIO(
     Codigo NUMBER PRIMARY KEY,
     Nombre VARCHAR2(20) NOT NULL,
-    Descripcion VARCHAR2(100)
+    Descripcion VARCHAR2(500)
 );
 
 CREATE TABLE REGISTRO_REACCION(
@@ -183,6 +183,7 @@ CREATE TABLE SEDE(
 );
 
 CREATE TABLE PEDIDO(
+    Codigo NUMBER NOT NULL,
     Lugar NUMBER NOT NULL,
     Organizacion NUMBER NOT NULL,
     Monto_Total NUMBER NOT NULL,
@@ -191,7 +192,7 @@ CREATE TABLE PEDIDO(
     Vacuna NUMBER,
     Periodo FECHA,
     Cantidad Existencia,
-    CONSTRAINT PK_Pedido PRIMARY KEY (Organizacion,Lugar),
+    CONSTRAINT PK_Pedido PRIMARY KEY (Codigo,Organizacion,Lugar),
     CONSTRAINT FK_Pedido_Organizacion FOREIGN KEY (Organizacion) REFERENCES ORGANIZACION(Codigo),
     CONSTRAINT FK_Pedido_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo),
     CONSTRAINT FK_Pedido_Insumo FOREIGN KEY (Insumo) REFERENCES INSUMO(Codigo),

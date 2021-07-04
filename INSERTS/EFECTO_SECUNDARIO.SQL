@@ -1,0 +1,15 @@
+INSERT INTO EFECTO_SECUNDARIO VALUES (1, 'Náuseas', 'Una sensación que indica la proximidad del vómito y esfuerzos que acompañan a la necesidad de vomitar');
+INSERT INTO EFECTO_SECUNDARIO VALUES (2, 'Mareos', 'Crean la falsa sensación de que tú o el entorno están girando o moviéndose');
+INSERT INTO EFECTO_SECUNDARIO VALUES (3, 'Fiebre', 'Es un aumento temporal de la temperatura del cuerpo, en general debido a una enfermedad');
+INSERT INTO EFECTO_SECUNDARIO VALUES (4, 'Diarrea', 'Es la evacuación intestinal de heces flojas y líquidas tres o más veces al día');
+INSERT INTO EFECTO_SECUNDARIO VALUES (5, 'Dolor de cabeza', 'Es un dolor o molestia en la cabeza, el cuero cabelludo o el cuello');
+INSERT INTO EFECTO_SECUNDARIO VALUES (6, 'Alergia', 'Es una reacción de su sistema inmunitario hacia algo que no molesta a la mayoría de las demás personas');
+INSERT INTO EFECTO_SECUNDARIO VALUES (7, 'Escalofríos', 'Se puede referir a un episodio de temblores junto con palidez y sensación de frío');
+INSERT INTO EFECTO_SECUNDARIO VALUES (8, 'Cansancio', 'Es la falta de fuerzas después de realizar un trabajo físico, intelectual o emocional, o por la falta de descanso');
+INSERT INTO EFECTO_SECUNDARIO VALUES (9, 'Dolor Muscular', 'Sensación de dolor en los músculos también en articulaciones que impiden desarrollar actividades físicas');
+INSERT INTO EFECTO_SECUNDARIO VALUES (10, 'Hinchazón', 'Es el agrandamiento de órganos, piel u otras partes del cuerpo, causado por la acumulación de líquidos en los tejidos');
+INSERT INTO EFECTO_SECUNDARIO VALUES (11, 'Dolor abdominal', 'Dolor pulasante en la zona abdominal, desde el pecho hasta la ingle. Tambien considerado por muchos dolor de estómago');
+INSERT INTO EFECTO_SECUNDARIO VALUES (12, 'Deshidratación', 'Afección que se debe a la pérdida de demasiada agua y otros líquidos necesarios para el funcionamiento normal del cuerpo');
+INSERT INTO EFECTO_SECUNDARIO VALUES (13, 'Sofocos', 'Es la sensación repentina de calor en la parte superior del cuerpo, que suele ser más intensa en la cara, el cuello y el pecho');
+INSERT INTO EFECTO_SECUNDARIO VALUES (14, 'Rigidez', 'Se caracteriza por la sensación de tensión en los músculos, asimismo se pueden producir espasmos musculares o movimientos bruscos');
+INSERT INTO EFECTO_SECUNDARIO VALUES (15, 'Hormigueo', 'Sensación molesta de cosquilleo o picor que pueden presentarse en cualquier parte del cuerpo, usualmente en el brazo o pierna.);

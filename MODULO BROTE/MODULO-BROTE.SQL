@@ -25,6 +25,7 @@ BEGIN
     END LOOP;
     CLOSE c_paises_ale;
     
+    --Llamar al modulo de vacunaciòn
 END;
 
 
@@ -198,6 +199,22 @@ BEGIN
 END;
 
 --------REINICIAR LA SIMULACION--------------
+
+CREATE OR REPLACE GENERAR_BROTE
+IS
+NuevoBrote NUMBER;
+
+BEGIN
+    SELECT DBMS_RANDOM.value(0,1) INTO Preferencia
+    INTO NuevoBrote
+    FROM dual;
+
+    IF (NuevoBrote = 1) THEN
+        INFECTAR_PAISES;
+    ELSE    
+        SELECCION_PAISES;
+END;
+
 
 DELETE FROM BROTE;
 

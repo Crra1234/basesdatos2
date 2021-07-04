@@ -133,7 +133,7 @@ BEGIN
     --Se desglosa los datos suministrados
     select c.lugar into Lugar from CENTRO_VACUNACION c where c.codigo=centro;
     
-    --Si es 0, es insumo. En caso contrario, es suministro--
+    --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 1) THEN
         SELECT  * FROM(
             SELECT  v.Organizacion 
@@ -151,7 +151,7 @@ BEGIN
         ROWNUM <2;
     END IF;
     
-    --Si es 0, es insumo. En caso contrario, es suministro--
+    --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 0) THEN
         INSERT INTO PEDIDO VALUES (Lugar,Organizacion,MontTotal,'ENVIADO',Suministro,null,Fecha(SYSDATE,SYSDATE),Existencia(Canti,Canti));
     ELSE 
@@ -335,6 +335,8 @@ BEGIN
     CLOSE Pacientes;
 END;
 
+
+
 --Procedumiento de asignacion de fechas (Y vacunacion) de los pacientes--
 CREATE OR REPLACE PROCEDURE Asignacion_Vacunacion(Codarea NUMBER)
 IS
@@ -345,6 +347,7 @@ IS
     FechaVac Date;
     NumAlt Number;
     Preferencia Number;
+    Cant_Necesaria NUMBER;
     
     
     -----CURSOR QUE CONTIENE LOS DATOS LOS PACIENTES DEL AREA SUMINISTRADA-----
@@ -396,7 +399,7 @@ BEGIN
                 )
                 WHERE rownum<2;
                 
-                --Se checkea si existe la vacuna con la cual se quiere vacunar el paciente--
+                --Se checkea si existe la vacuna con la cual se quiere vacunar el paciente--(6.3.3.3.1)
                 SELECT d.Cantidad.Cant_real INTO NumAlt
                 FROM Dosis d
                 WHERE
@@ -404,24 +407,28 @@ BEGIN
                 AND
                 d.vacuna = CodVac;
                 
-                --Si numalt = 0, se le reasigna al paciente una fecha de programacion aleatoria dentro de 4 meses a partir de la fecha del sistema.
+                --Si numalt = 0, se le reasigna al paciente una fecha de programacion aleatoria dentro de 4 meses a partir de la fecha del sistema. (Flujo )
 
-                IF (NumAlt = 0) THEN
-                
+                IF (NumAlt = 0) THEN                   
+                    
+                    --ASIGNACION DE OTRA FECHA DE VACUNACIÓN DEBIDO A QUE NO HAY DOSIS DISPONIBLE              
                     SELECT DBMS_RANDOM.value(1,27) INTO NumAlt
                     FROM dual;
-                    
-                    FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 4);
+
+                    -- Cambio de 4 meses a 1 FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 4);                   
+                    FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 1);
                     
                     INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,FechaVac));
                     INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
                     CONTINUE;
+
+                    --SUMINISTROS_DISPONIBLES(Codarea,CodCent,CodVac);
                     
                 END IF;
 
             ELSE
             
-                --Se selecciona una vacuna aleatoria que dispone el centro de vacunacion del area--
+                --Se selecciona una vacuna aleatoria que dispone el centro de vacunacion del area-- (6.3.3.3.1)
                 SELECT * INTO CodVac
                 FROM (
                 
@@ -458,7 +465,7 @@ BEGIN
                     Preferencia := 3;
                 END IF;
                         
-                    END IF;
+            END IF;
                     
                     SELECT DBMS_RANDOM.value(0,27) INTO NumAlt
                     FROM dual;
@@ -468,8 +475,13 @@ BEGIN
                 
         
             -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
-            INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,FechaVac));
+            INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,Null));
+            GENERAR_EFECTOS_SECUNDARIOS(CodVac, CodCent, CodPac, FECHA.Fecha_inicial);
+
+            --ASIGNACION DE LA SEGUNDA DOSIS PARA EL PACIENTE
             INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
+
+            
             
         END IF;
 
@@ -477,6 +489,49 @@ BEGIN
     CLOSE Pacientes;
 END;
 
+
+
+--Procedimiento para generar efecto secundario al paciente vacunado (Flujo 6.3.3.3.2.3.1)
+CREATE OR REPLACE PROCEDURE GENERAR_EFECTOS_SECUNDARIOS(Codvac NUMBER, CodCent NUMBER, CodPac NUMBER, FechaVac Date)
+IS
+Probabilidad NUMBER(38,0);
+DiaEfec NUMBER;
+FechaInicio Date;
+FechaFinal Date;
+Efecto NUMBER;
+
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('------------------EFECTOS SECUNDARIOS POR PACIENTE VACUNADO --------------------------');
+    
+    --Probabilidad de que el paciente tenga efectos secundarios es de 25%. 1-25%: Tiene efecto secundario; 2-50%, 3-75%, 4-100%: No tendrá efecto secundario.
+        SELECT DBMS_RANDOM.value(1,4) INTO Probabilidad 
+        FROM dual;
+        DBMS_OUTPUT.PUT_LINE(Probabilidad);
+        IF (Probabilidad = 1) THEN
+
+            --Fecha en que inicia el efecto secundario, será 2 días despues de la vacunación.
+            FechaInicio := FechaVac + 2;
+
+            --DiaEfec (2-10 días) lo que durará una vez que inicie el efecto secundario del paciente.                   
+            SELECT DBMS_RANDOM.value(2,10) INTO DiaEfec
+            FROM dual;
+
+            FechaFinal:=  FechaInicio + DiaEfec;
+
+            SELECT * 
+            INTO Efecto
+            FROM(
+                SELECT Codigo 
+                FROM EFECTO_SECUNDARIO
+                ORDER BY dbms_random.random)
+            WHERE rownum < 2;
+
+            --Se inserta el registro de la reacción por la vacuna al paciente
+            INSERT INTO REGISTRO_REACCION VALUES(Codvac, CodCent, CodPac, Efecto, FECHA(FechaInicio, FechaFinal));
+
+        END IF;
+
+END;
 ---------------PROCEDIMIENTO DE CENTROS POR AREA--------------------------
 
 CREATE OR REPLACE PROCEDURE CENTRO_POR_AREA
@@ -499,8 +554,8 @@ BEGIN
             ADD_INSUMOS(Centro);
             ADD_DOSIS(Centro);
             PACIENTES_POR_AREA(Areas(x)(j));
-            Asignacion_lista_espera(Areas(x)(j));
-            Asignacion_Vacunacion(Areas(x)(j));
+            --Asignacion_lista_espera(Areas(x)(j));
+            --Asignacion_Vacunacion(Areas(x)(j));
         END LOOP;
     END LOOP;
 END;

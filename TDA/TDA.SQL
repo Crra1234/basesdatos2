@@ -22,7 +22,7 @@ END;
 
 Create or Replace TYPE Existencia as Object (
    Cant_real NUMBER,
-   Cantidad_necesaria NUMBER,
+   Cant_necesaria NUMBER,
    Static Function get_Porcentaje return NUMBER,
    Static Function get_Restante return NUMBER
 );
@@ -31,7 +31,7 @@ Create or Replace Type Body Existencia as
    Static Function get_Porcentaje return NUMBER
    IS
    BEGIN
-      porcentaje:= (Cant_real * 100) / Cantidad_necesaria;
+      porcentaje:= (Cant_real * 100) / Cant_necesaria;
       return porcentaje;
    END;
 END;
@@ -40,7 +40,7 @@ Create or Replace Type Body Existencia as
    Static Function get_Restante return NUMBER
    IS
    BEGIN
-      restante:= (Cantidad_necesaria - Cant_real);
+      restante:= (Cant_necesaria - Cant_real);
       return restante;
    END;
 END;

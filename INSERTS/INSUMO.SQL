@@ -13,12 +13,3 @@ INSERT INTO INSUMO VALUES (12, 'Clexane', 'Jeringas');
 INSERT INTO INSUMO VALUES (13, 'Masglo', 'Alcohol');
 INSERT INTO INSUMO VALUES (14, 'Alcohol Isopropílico', 'Alcohol');
 INSERT INTO INSUMO VALUES (15, 'Clenox', 'Jeringas');
-
-
-CREATE TABLE INVENTARIO(
-   Centro NUMBER NOT NULL;
-   Insumo NUMBER NOT NULL;
-   Cantidad Existencia;
-   CONSTRAINT FK_Centro FOREIGN KEY (Centro) REFERENCES CENTRO_VACUNACION(Codigoo),
-   CONSTRAINT FK_Insumo FOREIGN KEY (Insumo) REFERENCES INSUMO(Codigo)
-);
