@@ -118,20 +118,20 @@ END;
 
 
 -------------PROCEDIMIENTO AGREGAR PEDIDOS---------------------------------
-CREATE OR REPLACE PROCEDURE ADD_PEDIDO(Suministro NUMBER,Centro NUMBER,Canti NUMBER,Flag Number) 
+CREATE OR REPLACE PROCEDURE ADD_PEDIDO(Suministro NUMBER,Lugar NUMBER,Cant_Necesaria NUMBER,Cant_real,Flag Number,Status_Flag Number) 
 IS
    Randomprice NUMBER; 
    Organizacion NUMBER;
-   Lugar NUMBER;
+   Codigo_Temp NUMBER;
    MontTotal NUMBER(38,2);
+   Estatus VARCHAR2(20);
+   Fecha_Inicio DATE;
+   Fecha_Final DATE;
 BEGIN
     --Se define una cantidad aleatoria que vale el suministro generico-
     SELECT DBMS_RANDOM.value(25,100) INTO Randomprice
     FROM dual;
-    MontTotal := Randomprice * Canti;
-    
-    --Se desglosa los datos suministrados
-    select c.lugar into Lugar from CENTRO_VACUNACION c where c.codigo=centro;
+    MontTotal := Randomprice * Cant_Necesaria;
     
     --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 1) THEN
@@ -150,14 +150,39 @@ BEGIN
         INTO Organizacion
         ROWNUM <2;
     END IF;
+
+    SELECT MAX(Codigo) into Codigo_Temp from PEDIDO;
     
+    IF (Status_Flag = 1) THEN
+        Estatus:= 'ENVIADO';
+
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-01-01','J'),TO_CHAR(DATE '2021-03-01','J'))),'J')  
+        INTO FechaInicio 
+        FROM DUAL;
+
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
+        INTO FechaFinal 
+        FROM DUAL;
+    ELSE
+        Estatus:= 'EN PROCESO';
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
+        INTO Fecha_Inicio 
+        FROM DUAL;
+
+        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-08-01','J'),TO_CHAR(DATE '2021-09-01','J'))),'J')  
+        INTO Fecha_Final 
+        FROM DUAL;
+    END IF;
+
+
+
     --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 0) THEN
-        INSERT INTO PEDIDO VALUES (Lugar,Organizacion,MontTotal,'ENVIADO',Suministro,null,Fecha(SYSDATE,SYSDATE),Existencia(Canti,Canti));
+        INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,Suministro,null,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
     ELSE 
-        INSERT INTO PEDIDO VALUES (Lugar,Organizacion,MontTotal,'ENVIADO',null,Suministro,Fecha(SYSDATE,SYSDATE),Existencia(Canti,Canti));
+        INSERT INTO PEDIDO VALUES (Codigo_Temp,Organizacion,MontTotal,Estatus,null,Suministro,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
      END IF;
-END
+END;
 
 
 
@@ -211,7 +236,6 @@ BEGIN
 
        ------INSERT CORRESPONDIENTE AL DOSIS CON EL CUAL CUENTA EL CENTRO DE SALUD EN SU INVENTARIO
        INSERT INTO DOSIS VALUES(Centro,CodVacuna,Existencia(CantReal,CantNec));
-       ADD_PEDIDO(CodVacuna,Centro,CantReal,1);
     
     END LOOP;
     
@@ -270,7 +294,6 @@ BEGIN
 
        ------INSERT CORRESPONDIENTE AL INSUMO CON EL CUAL CUENTA EL CENTRO DE SALUD EN SU INVENTARIO
        INSERT INTO INVENTARIO VALUES(Centro,CodInsum,Existencia(CantReal,CantNec));
-       ADD_PEDIDO(Codinsum,Centro,CantReal,0);
     END LOOP;
     
 END;
@@ -530,6 +553,159 @@ BEGIN
             INSERT INTO REGISTRO_REACCION VALUES(Codvac, CodCent, CodPac, Efecto, FECHA(FechaInicio, FechaFinal));
 
         END IF;
+
+END;
+
+CREATE OR REPLACE FUNCTION CREATE_PEDIDO_INVENTARIO(Area NUMBER,Insumo NUMBER) return NUMBER
+IS
+    CodCentro NUMBER;
+    Total_Insumos NUMBER;
+    Parcial_insumos NUMBER;
+
+    CURSOR Centro is 
+    SELECT Codigo 
+    FROM CENTRO_VACUNACION
+    WHERE Lugar=Area;
+
+BEGIN
+    Total_Insumos=0;
+    OPEN Centro;
+    LOOP  
+       FETCH Centro INTO CodCentro;
+       EXIT WHEN Centro%NOTFOUND;
+
+        SELECT I.Cantidad.Cant_real into Parcial_insumos
+        FROM Inventario I
+        WHERE I.Centro=CodCentro;
+
+        Total_Insumos := Parcial_insumos + Total_Insumos;
+
+    END LOOP;
+    CLOSE Centro;
+
+    RETURN Total_Insumos;
+END;
+
+CREATE OR REPLACE FUNCTION CREATE_PEDIDO_DOSIS(Area NUMBER,Vacuna NUMBER) return NUMBER
+IS
+    CodCentro NUMBER;
+    Total_Vacuna NUMBER;
+    Parcial_Vacuna NUMBER;
+
+    CURSOR Centro is 
+    SELECT Codigo 
+    FROM CENTRO_VACUNACION
+    WHERE Lugar=Area;
+
+BEGIN
+    Total_Vacuna=0;
+    OPEN Centro;
+    LOOP  
+       FETCH Centro INTO CodCentro;
+       EXIT WHEN Centro%NOTFOUND;
+
+        SELECT D.Cantidad.Cant_real into Parcial_Vacuna
+        FROM DOSIS D
+        WHERE D.Centro=CodCentro;
+
+        Total_Vacuna := Parcial_Vacuna + Total_Vacuna;
+
+    END LOOP;
+    CLOSE Centro;
+
+    RETURN Total_Vacuna;
+END;
+
+CREATE OR REPLACE PROCEDURE CREATE_PEDIDO(Pais NUMBER) 
+IS
+    CodInsumo NUMBER;
+    CodArea NUMBER;
+    CodVacuna NUMBER;
+
+    NumRandom NUMBER;
+    NumRand NUMBER;
+    Parcial_Existencia NUMBER;
+    Total_Existencia NUMBER;
+
+    CURSOR Area is 
+    SELECT Codigo 
+    FROM Lugar
+    WHERE Lugar=Pais 
+    AND TIPO='AREA';
+
+    CURSOR INSUMOS IS
+    Select Codigo
+    FROM INSUMO;
+
+    CURSOR VACUNA IS
+    Select Codigo
+    FROM VACUNA;
+    
+BEGIN
+    --Se hace un loop para encontrar la cantidad total de los insumos en un pais--
+    OPEN INSUMOS;
+    LOOP
+         FETCH INSUMOS INTO CodInsumo;
+         EXIT WHEN INSUMOS%NOTFOUND;
+         Total_Existencia=0;
+
+        --Se hace otro loop para encontrar la cantidad total de los insumos en un area--
+        OPEN Area;
+            LOOP
+                FETCH Area INTO CodArea;
+                EXIT WHEN AREA%NOTFOUND;
+                Parcial_Existencia:= CREATE_PEDIDO_INVENTARIO(CodArea,CodInsumo);
+                Total_Existencia:= Total_Existencia + Parcial_Existencia;
+            END LOOP;
+        CLOSE Area;
+        IF (Total_Existencia != 0) THEN
+
+            SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+            FROM dual;      
+            Total_Existencia:= Total_Existencia + NumRandom;
+
+            ADD_PEDIDO(CodInsumo,Pais,Total_existencia,NumRandom,0,1);
+
+            SELECT DBMS_RANDOM.value(0,1) INTO NumRand
+            FROM dual; 
+            IF (NumRand = 1) THEN
+                ADD_PEDIDO(CodInsumo,Pais,NumRandom,NumRandom,0,0);
+            END IF;
+        END IF;
+    END LOOP;
+    CLOSE INSUMOS;
+
+    --Se hace un loop para encontrar la cantidad total de las dosis en un pais--
+    OPEN VACUNA;
+    LOOP
+         FETCH VACUNA INTO CodVacuna;
+         EXIT WHEN VACUNA%NOTFOUND;
+         Total_Existencia=0;
+
+        --Se hace otro loop para encontrar la cantidad total de las dosis en un area--
+        OPEN Area;
+            LOOP
+                FETCH Area INTO CodArea;
+                EXIT WHEN AREA%NOTFOUND;
+                Parcial_Existencia:= CREATE_PEDIDO_DOSIS(CodArea,CodVac);
+                Total_Existencia:= Total_Existencia + Parcial_Existencia;
+            END LOOP;
+        CLOSE Area;
+
+        IF (Total_Existencia != 0) THEN
+
+            SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+            FROM dual;      
+            Total_Existencia:= Total_Existencia + NumRandom;
+
+            ADD_PEDIDO(CodVacuna,Pais,Total_existencia,NumRandom,1,1);
+        END IF;
+
+        IF (NumRand = 1) THEN
+                ADD_PEDIDO(CodVacuna,Pais,NumRandom,NumRandom,1,0);
+        END IF;
+    END LOOP;
+    CLOSE VACUNA;
 
 END;
 ---------------PROCEDIMIENTO DE CENTROS POR AREA--------------------------
