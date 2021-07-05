@@ -5,13 +5,17 @@
 DECLARE 
     Cor SYS_REFCURSOR;
 BEGIN 
-    REPORTE1(Cor,null,null); 
+    --REPORTE1(Cor,null,null); 
+    --REPORTE1(Cor,null,'04-SEP-2021'); 
+    -- REPORTE1(Cor,'Pfizer',null); 
+    --REPORTE1(Cor,'Pfizer','04-SEP-2021'); 
 END;
-
 
 CREATE OR REPLACE PROCEDURE REPORTE1(Cur OUT SYS_REFCURSOR, NomVac VARCHAR2,  FechaAprobacion DATE)
 IS
 BEGIN
+    IF(NomVac IS NULL AND FechaAprobacion IS NULL) THEN
+        ----------------- APARTADO A: LOS 2 PARAMETROS SON OPCIONALES-------------------
         OPEN Cur FOR
             SELECT  o.Creacion.Fecha_inicio as "Fecha de Creacion", 
                     o.Aprobacion.Fecha_inicio as "Fecha de Aprobacion", 
@@ -28,8 +32,75 @@ BEGIN
                     END "¿Se distribuye por mecanismo COVAX?"
             FROM VA_OR o, VACUNA v, ORGANIZACION p
             WHERE o.Vacuna = v.Codigo
-            AND o.Organizacion = p.Codigo;    
+            AND o.Organizacion = p.Codigo; 
+            
+    ELSIF(NomVac IS NULL AND FechaAprobacion IS NOT NULL) THEN
+    ----------------- APARTADO B: NomVac es Opcional y FechaAprobacion no es Opcional-------------------
+        OPEN Cur FOR
+            SELECT  o.Creacion.Fecha_inicio as "Fecha de Creacion", 
+                    o.Aprobacion.Fecha_inicio as "Fecha de Aprobacion", 
+                    v.Nombre as "Nombre de la Vacuna", 
+                    CASE 
+                        WHEN o.Aprobacion is NULL THEN 'No esta Aprobada por la OMS'
+                        ELSE 'Aprobada por la OMS'
+                    END "Estatus de la Vacuna",
+                    v.Fase as "Fase de Vacuna",
+                    CONCAT(v.Efectividad,'%') as "% de Efectividad",
+                    CASE 
+                        WHEN p.Nombre = 'COVAX' THEN 'Si'
+                        ELSE 'No'
+                    END "¿Se distribuye por mecanismo COVAX?"
+            FROM VA_OR o, VACUNA v, ORGANIZACION p
+            WHERE o.Vacuna = v.Codigo
+            AND o.Organizacion = p.Codigo
+            AND TO_CHAR(o.Aprobacion.Fecha_inicio,'DD/MM/YYYY') = TO_CHAR(FechaAprobacion,'DD/MM/YYYY');
+    
+    ELSIF(NomVac IS NOT NULL AND FechaAprobacion IS NULL) THEN
+    ----------------- APARTADO C: NomVac no es Opcional y FechaAprobacion es Opcional-------------------
+        OPEN Cur FOR
+            SELECT  o.Creacion.Fecha_inicio as "Fecha de Creacion", 
+                    o.Aprobacion.Fecha_inicio as "Fecha de Aprobacion", 
+                    v.Nombre as "Nombre de la Vacuna", 
+                    CASE 
+                        WHEN o.Aprobacion is NULL THEN 'No esta Aprobada por la OMS'
+                        ELSE 'Aprobada por la OMS'
+                    END "Estatus de la Vacuna",
+                    v.Fase as "Fase de Vacuna",
+                    CONCAT(v.Efectividad,'%') as "% de Efectividad",
+                    CASE 
+                        WHEN p.Nombre = 'COVAX' THEN 'Si'
+                        ELSE 'No'
+                    END "¿Se distribuye por mecanismo COVAX?"
+            FROM VA_OR o, VACUNA v, ORGANIZACION p
+            WHERE o.Vacuna = v.Codigo
+            AND o.Organizacion = p.Codigo
+            AND v.Nombre = NomVac;
+    
+    ELSE
+        ----------------- APARTADO D: LOS 2 PARAMETROS NO SON OPCIONALES-------------------
+        OPEN Cur FOR
+            SELECT  o.Creacion.Fecha_inicio as "Fecha de Creacion", 
+                    o.Aprobacion.Fecha_inicio as "Fecha de Aprobacion", 
+                    v.Nombre as "Nombre de la Vacuna", 
+                    CASE 
+                        WHEN o.Aprobacion is NULL THEN 'No esta Aprobada por la OMS'
+                        ELSE 'Aprobada por la OMS'
+                    END "Estatus de la Vacuna",
+                    v.Fase as "Fase de Vacuna",
+                    CONCAT(v.Efectividad,'%') as "% de Efectividad",
+                    CASE 
+                        WHEN p.Nombre = 'COVAX' THEN 'Si'
+                        ELSE 'No'
+                    END "¿Se distribuye por mecanismo COVAX?"
+            FROM VA_OR o, VACUNA v, ORGANIZACION p
+            WHERE o.Vacuna = v.Codigo
+            AND o.Organizacion = p.Codigo
+            AND v.Nombre = NomVac
+            AND TO_CHAR(o.Aprobacion.Fecha_inicio,'DD/MM/YYYY') = TO_CHAR(FechaAprobacion,'DD/MM/YYYY');
+    END IF;
 END;
+
+
 
 --2.- Reporte de cantidad y porcentaje de vacunas por tipo a disposición de los diferentes países del mundo (Parametrizado por
 --Nombre del País y/o tipo de vacuna y/o fecha de inicio adquisición y/o fecha de fin adquisición):

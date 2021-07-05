@@ -20,7 +20,7 @@ CREATE TABLE PACIENTE (
     Fecha_Nacimiento DATE NOT NULL ,
     Grupo_Etario VARCHAR2(8) NOT NULL,
     Lugar NUMBER,
-    CONSTRAINT CH_Grupo_Etario CHECK (Grupo_Etario IN ('JOVEN','ADULTO','ANCIANO')),
+    CONSTRAINT CH_Grupo_Etario CHECK (Grupo_Etario IN ('INFANCIA','ADULTEZ','VEJEZ')),
     CONSTRAINT FK_Paciente_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo)
  );
 
@@ -202,12 +202,13 @@ CREATE TABLE PEDIDO(
 );
 
 CREATE TABLE PAGO(
+    Pedido NUMBER NOT NULL,
     Lugar NUMBER NOT NULL,
     Organizacion NUMBER NOT NULL,
     Codigo NUMBER NOT NULL,
     Periodo FECHA,
     Monto NUMBER NOT NULL,
-    CONSTRAINT PK_Pago PRIMARY KEY (Lugar,Organizacion,Codigo),
+    CONSTRAINT PK_Pago PRIMARY KEY (Lugar,Organizacion,Codigo, Pedido),
     CONSTRAINT FK_Pago_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo),
     CONSTRAINT FK_Pago_Organizacion FOREIGN KEY (Organizacion) REFERENCES ORGANIZACION(Codigo)
 );
