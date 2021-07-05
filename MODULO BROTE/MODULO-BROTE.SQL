@@ -213,6 +213,7 @@ BEGIN
         INFECTAR_PAISES;
     ELSE    
         SELECCION_PAISES;
+    END IF;
 END;
 
 
