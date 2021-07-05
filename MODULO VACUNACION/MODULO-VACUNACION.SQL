@@ -150,8 +150,6 @@ BEGIN
             ORDER BY dbms_random.random)
         WHERE ROWNUM <2;
     END IF;
-
-    SELECT MAX(Codigo) into Codigo_Temp from PEDIDO;
     
     IF (Status_Flag = 1) THEN
         Estatus:= 'ENVIADO';
@@ -165,6 +163,7 @@ BEGIN
         FROM DUAL;
     ELSE
         Estatus:= 'EN PROCESO';
+
         SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
         INTO Fecha_Inicio 
         FROM DUAL;
@@ -174,14 +173,15 @@ BEGIN
         FROM DUAL;
     END IF;
 
-
+    SELECT NVL(MAX(P.CODIGO), 1) INTO Codigo_Temp FROM PEDIDO P;
+    Codigo_temp := Codigo_Temp+1;
 
     --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 0) THEN
         INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,Suministro,null,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
     ELSE 
         INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,null,Suministro,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
-     END IF;
+    END IF;
 END;
 
 
@@ -556,12 +556,13 @@ BEGIN
         END IF;
 
 END;
+
 --Se hace cuenta los suministros de los centro de vacunacion de un area, con un insumo determinado--
-CREATE OR REPLACE FUNCTION CREATE_PEDIDO_INVENTARIO(Area NUMBER,Insumo NUMBER) return NUMBER
+CREATE OR REPLACE FUNCTION CREATE_PEDIDO_INVENTARIO(Area NUMBER,Insumo_ext NUMBER) return NUMBER
 IS
     CodCentro NUMBER;
     Total_Insumos NUMBER;
-    Parcial_insumos Existencia;
+    Parcial_insumos NUMBER;
 
 BEGIN
     Total_Insumos:=0;
@@ -569,13 +570,13 @@ BEGIN
     SELECT distinct i.centro into CodCentro
     FROM INVENTARIO i,CENTRO_VACUNACION c 
     WHERE i.Centro = c.Codigo
-    AND c.Lugar=Area AND i.insumo=Insumo;
+    AND c.Lugar=Area AND i.Insumo=Insumo_ext;
 
-    SELECT I.Cantidad into Parcial_insumos
+    SELECT I.Cantidad.Cant_real into Parcial_insumos
     FROM Inventario I
-    WHERE I.Centro=CodCentro AND I.insumo=Insumo;
+    WHERE I.Centro=CodCentro AND I.Insumo=Insumo_ext;
 
-    Total_Insumos := Parcial_insumos.Cant_real + Total_Insumos;
+    Total_Insumos := Parcial_insumos + Total_Insumos;
 
     RETURN Total_Insumos;
 
@@ -585,7 +586,7 @@ BEGIN
 END;
 
 --Se hace cuenta los suministros de los centro de vacunacion de un area, con una vacuna determinada--
-CREATE OR REPLACE FUNCTION CREATE_PEDIDO_DOSIS(Area NUMBER,Vacuna NUMBER) return NUMBER
+CREATE OR REPLACE FUNCTION CREATE_PEDIDO_DOSIS(Area NUMBER,Vacuna_ext NUMBER) return NUMBER
 IS
     CodCentro NUMBER;
     Total_Vacuna NUMBER;
@@ -598,11 +599,11 @@ BEGIN
     SELECT distinct d.centro into CodCentro
     FROM Dosis d,CENTRO_VACUNACION c 
     WHERE d.Centro = c.Codigo
-    AND c.Lugar=Area and d.vacuna=Vacuna;
+    AND c.Lugar=Area and d.Vacuna=Vacuna_ext;
 
     SELECT D.Cantidad into Parcial_Vacuna
     FROM DOSIS D
-    WHERE D.Centro=CodCentro and d.Vacuna=Vacuna;
+    WHERE D.Centro=CodCentro and d.Vacuna=Vacuna_ext;
 
         Total_Vacuna := Parcial_Vacuna.Cant_real + Total_Vacuna;
 
@@ -656,6 +657,7 @@ BEGIN
                 Total_Existencia:= Total_Existencia + Parcial_Existencia;
             END LOOP;
         CLOSE Area;
+
         IF (Total_Existencia != 0) THEN
 
             SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
