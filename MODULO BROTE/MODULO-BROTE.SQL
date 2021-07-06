@@ -200,13 +200,12 @@ END;
 
 --------REINICIAR LA SIMULACION--------------
 
-CREATE OR REPLACE GENERAR_BROTE
+CREATE OR REPLACE PROCEDURE GENERAR_BROTE
 IS
 NuevoBrote NUMBER;
 
 BEGIN
-    SELECT DBMS_RANDOM.value(0,1) INTO Preferencia
-    INTO NuevoBrote
+    SELECT DBMS_RANDOM.value(0,1) INTO NuevoBrote
     FROM dual;
 
     IF (NuevoBrote = 1) THEN

@@ -12,10 +12,31 @@ NombrePedido VARCHAR(50);
 BEGIN
 
    --Consulta para traerme todo lo necesario de pedido.
-    SELECT pe.Lugar, pe.Organizacion, pe.Monto_Total, pe.Periodo.Fecha_inicio, pe.Periodo.Fecha_fin, pe.Nombre 
-    INTO CodPais, CodOrg, MonTotal, FechaInicioPedido, FechaFinalPedido, NombrePedido
+    SELECT pe.Lugar
+    INTO CodPais
     FROM PEDIDO pe
     WHERE pe.Codigo = CodPedi;
+
+    SELECT pe.Organizacion
+    INTO CodOrg
+    FROM PEDIDO pe
+    WHERE pe.Codigo = CodPedi;
+
+    SELECT pe.Monto_Total
+    INTO MonTotal
+    FROM PEDIDO pe
+    WHERE pe.Codigo = CodPedi;
+
+    SELECT pe.Periodo.Fecha_inicio
+    INTO FechaInicioPedido
+    FROM PEDIDO pe
+    WHERE pe.Codigo = CodPedi;
+
+    SELECT pe.Periodo.Fecha_fin
+    INTO FechaFinalPedido
+    FROM PEDIDO pe
+    WHERE pe.Codigo = CodPedi;
+   
 
    FechaAct:= GENERAR_FECHA(FechaFinalPedido);
    DBMS_OUTPUT.PUT_LINE(FechaAct);
@@ -236,7 +257,7 @@ BEGIN
         SET Estatus = 'ENVIADO'
         WHERE Codigo = CodPedi; 
 
-        DBMS_OUTPUT.PUT_LINE('El pedido: ' || CodPedi || ') ' || NombrePedido || ' de monto total ' || MonTotal || ' se ha pagado completamente su estatus pasa a ser: ENVIADO');
+        DBMS_OUTPUT.PUT_LINE('El pedido con ID  (' || CodPedi || ') de monto total ' || MonTotal || ' se ha pagado completamente su estatus pasa a ser: ENVIADO');
     END IF;
     
 END;

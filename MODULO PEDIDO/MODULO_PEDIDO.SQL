@@ -574,12 +574,11 @@ IS
 CodInsu NUMBER;
 BEGIN
 
-      SELECT * 
+      SELECT * INTO CodInsu
          FROM (
          SELECT Codigo
          FROM INSUMO
          ORDER BY dbms_random.random)
-      INTO CodInsu
       WHERE  rownum < 2;
 
    RETURN CodInsu;
