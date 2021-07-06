@@ -33,6 +33,13 @@ BEGIN
 
             DBMS_OUTPUT.PUT_LINE('El país desea ser parte del COVAX');
             Financiamiento:= ASIGNAR_FINANCIAMIENTO;
+            DBMS_OUTPUT.PUT_LINE('El país tendrá un finaciamiento de: ' || Financiamiento || '%');
+
+            IF (VERIFICAR_RESTRICCIONES(CodPais) = 1) THEN --Si el país tiene una restricción local (Flujo 2.3.2.3.2.3)
+
+            ELSE --Si el país no tiene una restricción local (Flujo 2.3.2.3.2.4)
+
+            END IF;
 
          ELSE --No desea ser parte del mecanismo COVAX (Flujo 2.3.2.3.3)
 
@@ -54,6 +61,7 @@ END;
 
 CREATE OR REPLACE FUNCTION PERTENENCIA_COVAX(CodArea NUMBER) RETURN NUMBER
 IS
+Pertenece NUMBER;
 BEGIN
    SELECT
          CASE
@@ -116,4 +124,30 @@ BEGIN
 
    END IF;
 
+END;
+
+
+CREATE OR REPLACE FUNCTION VERIFICAR_RESTRICCIONES(CodPais) RETURN NUMBER
+IS
+Restriccion NUMBER;
+BEGIN
+   SELECT
+         CASE
+            WHEN  0 < ANY (SELECT Max(e.Codigo) 
+                  FROM EXCLUSION e
+                  WHERE e.Lugar = ( SELECT p.Codigo
+                                    FROM LUGAR p INNER JOIN LUGAR a ON p.Codigo = a.Lugar
+                                    WHERE a.Codigo = CodArea 
+                                    AND p.Tipo= 'PAIS'
+                                    AND a.Tipo= 'AREA')) THEN 1
+         ELSE 
+
+            EXCEPTION
+               WHEN NO_DATA_FOUND THEN 0
+
+         END Clasificacion
+   INTO Restriccion
+   FROM Dual;
+
+   RETURN Restriccion;
 END;
