@@ -10,7 +10,7 @@ IS
         FROM LUGAR
         WHERE Tipo = 'PAIS'
         ORDER BY dbms_random.random)
-    WHERE rownum < 3;
+    WHERE rownum < 16;
     
     PaisAle LUGAR.Codigo%type;
     PaisAleNomb LUGAR.Nombre%type;
@@ -49,7 +49,7 @@ IS
      AND p.Tipo= 'PAIS'
      AND a.Tipo= 'AREA'
      ORDER BY dbms_random.random)
-    WHERE  rownum < 3;
+    WHERE  rownum < 6;
 BEGIN
     OPEN Areas;
     LOOP

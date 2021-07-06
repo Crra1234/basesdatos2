@@ -42,7 +42,7 @@ IS
      AND m.Tipo = 'PAIS'
      AND m.codigo = Pais.Codigo 
      ORDER BY dbms_random.random)
-    WHERE  rownum < 3;
+    WHERE  rownum < 6;
 BEGIN
     OPEN c_area;
     DBMS_OUTPUT.PUT_LINE('-->AREAS-----------------------------------');
