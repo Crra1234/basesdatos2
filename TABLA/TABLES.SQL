@@ -140,13 +140,14 @@ CREATE TABLE EFECTO_SECUNDARIO(
 );
 
 CREATE TABLE REGISTRO_REACCION(
+    Vacunacion NUMBER,
     Vacuna NUMBER NOT NULL,
     Centro NUMBER NOT NULL,
     Paciente NUMBER NOT NULL,
     Efecto NUMBER NOT NULL,
     Periodo FECHA,
     CONSTRAINT PK_Registro_Reaccion PRIMARY KEY (Vacuna,Centro,Paciente,Efecto),
-    CONSTRAINT FK_Vacunacion FOREIGN KEY (Vacuna,Centro,Paciente) REFERENCES VACUNACION(Vacuna,Centro,Paciente),
+    CONSTRAINT FK_Vacunacion FOREIGN KEY (Vacunacion,Vacuna,Centro,Paciente) REFERENCES VACUNACION(Codigo,Vacuna,Centro,Paciente),
     CONSTRAINT FK_Efecto FOREIGN KEY (Efecto) REFERENCES EFECTO_SECUNDARIO(Codigo)
 );
 
