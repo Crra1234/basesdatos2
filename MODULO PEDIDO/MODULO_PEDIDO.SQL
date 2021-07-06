@@ -70,7 +70,7 @@ BEGIN
                INTO Fecha_Final 
                FROM DUAL;
 
-               INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, MontoTotal,'ENVIADO', NULL, CodSumi, Cantidad(NumRandom,CantNecePedi), Periodo(Fecha_Inicio,Fecha_Final),100); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+               INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, MontoTotal,'ENVIADO', NULL, CodSumi, Cantidad(NumRandom,CantNecePedi), Fecha(Fecha_Inicio,Fecha_Final),100); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
                DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaCovax|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodSumi|| '' |||| '' |||| );
                DBMS_OUTPUT.PUT_LINE('Se inicia el modulo de distribucion');
 
@@ -104,7 +104,7 @@ BEGIN
                      INTO Fecha_Final 
                      FROM DUAL;      
 
-                     INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Periodo(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+                     INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Fecha(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
                      DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaAle|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodVacuAlea|| '' |||| '' |||| );
 
                      --DITRIBUCION
@@ -173,7 +173,7 @@ BEGIN
                   INTO Fecha_Final 
                   FROM DUAL;
 
-                  INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, MontoTotal,'ENVIADO', NULL, CodSumi, Cantidad(NumRandom,CantNecePedi), Periodo(Fecha_Inicio,Fecha_Final),100); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+                  INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, MontoTotal,'ENVIADO', NULL, CodSumi, Cantidad(NumRandom,CantNecePedi), Fecha(Fecha_Inicio,Fecha_Final),100); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
                   DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaCovax|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodSumi|| '' |||| '' |||| );
                   DBMS_OUTPUT.PUT_LINE('Se inicia el modulo de distribucion');
 
@@ -207,7 +207,7 @@ BEGIN
                      INTO Fecha_Final 
                      FROM DUAL;   
 
-                     INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Periodo(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+                     INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Fecha(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
                      DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaAle|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodVacuAlea|| '' |||| '' |||| );
 
                      --DITRIBUCION
@@ -259,7 +259,7 @@ BEGIN
       CantNecePedi:= CantidadNece + NumRandom;
       MontoTotal:= CantNecePedi * 1000;
 
-      INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', CodSumi, NULL, Cantidad(NumRandom,CantNecePedi), Periodo(Fecha_Inicio,Fecha_Final),0); 
+      INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', CodSumi, NULL, Cantidad(NumRandom,CantNecePedi), Fecha(Fecha_Inicio,Fecha_Final),0); 
       DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaCovax|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, del insumo' ||CodSumi|| '' |||| '' |||| );
 
       
@@ -545,7 +545,7 @@ BEGIN
       INTO Fecha_Final 
       FROM DUAL;      
 
-      INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Periodo(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), 0); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+      INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Fecha(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), 0); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
       DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaAle|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodVacuAlea|| '' |||| '' |||| );
 
       --DITRIBUCION
