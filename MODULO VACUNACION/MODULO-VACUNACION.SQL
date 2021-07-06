@@ -309,6 +309,7 @@ IS
     FechaFin Date;
     FechaInicio Date;
     NumAlt Number;
+    Codigo_Temp NUMBER;
     
     -----CURSOR QUE CONTIENE LOS DATOS DE UN PACIENTES ALEATORIO CORRESPONDIENTE AL AREA (EQUIVALENTE AL 25% DE LOS HABITANTES DE ESA AREA) -----
     CURSOR Pacientes is 
@@ -343,16 +344,13 @@ BEGIN
         ORDER BY dbms_random.random
         )
         WHERE rownum<2;
-        
-   
-        --SE SELECCIONO ALEATORIAMENTE UNA FECHA EN EL INTERVALO EN EL QUE FINALIZO EL BROTE EN EL AREA, PARA LA VACUNACION--
-        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J') 
-        INTO FechaInicio
-        FROM DUAL;
-        
-        
-        -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
-        INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaInicio,null));
+
+        SELECT NVL(MAX(V.CODIGO), 1) INTO Codigo_Temp FROM Vacunacion V;
+        Codigo_temp := Codigo_Temp+1;
+        -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS, con fecha 1 mes antes de la fecha actual
+        INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(SYSDATE,-1),NULL));
+        Codigo_temp := Codigo_Temp+1;
+        INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(SYSDATE,NULL));
 
 
     END LOOP;
@@ -500,7 +498,7 @@ BEGIN
         
             -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
             INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,Null));
-            GENERAR_EFECTOS_SECUNDARIOS(CodVac, CodCent, CodPac, FECHA.Fecha_inicial);
+            --GENERAR_EFECTOS_SECUNDARIOS(CodVac, CodCent, CodPac, FECHA.Fecha_inicio);
 
             --ASIGNACION DE LA SEGUNDA DOSIS PARA EL PACIENTE
             INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
@@ -757,12 +755,9 @@ BEGIN
             Centros(counter):= Centro;
             ADD_INSUMOS(Centro);
             ADD_DOSIS(Centro);
-            PACIENTES_POR_AREA(Areas(x)(j));
-            --Asignacion_lista_espera(Areas(x)(j));
+            Asignacion_lista_espera(Areas(x)(j));
             --Asignacion_Vacunacion(Areas(x)(j));
         END LOOP;
     END LOOP;
 END;
-
-
 

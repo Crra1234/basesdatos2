@@ -3,7 +3,6 @@ INSERT INTO ORGANIZACION VALUES (2,'Moderna Therapeutics','Privada');
 INSERT INTO ORGANIZACION VALUES (3,'Janssen Vaccines','Privada');
 INSERT INTO ORGANIZACION VALUES (4,'Astrazeneca','Privada');
 INSERT INTO ORGANIZACION VALUES (5,'Sinopharm','Publica');
-
 INSERT INTO ORGANIZACION VALUES (6,'Gamaleya','Publica');
 INSERT INTO ORGANIZACION VALUES (7,'Sinovac','Publica');
 
