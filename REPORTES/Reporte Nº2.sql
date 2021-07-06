@@ -15,7 +15,7 @@ BEGIN
                              AND h.Lugar = a.Codigo
                              AND a.Tipo = 'AREA')
             ELSE 0
-        END "Cantidad de habitantes",
+        END AS "Cantidad de habitantes",
         CASE 
             WHEN p.Codigo IN (SELECT Codigo FROM PEDIDO) THEN (SELECT rtrim(xmlagg(xmlelement(PEDIDO,'• ' || SUM(l.Cantidad.Cant_real) || ' (' || to_char( (SUM(l.Cantidad.Cant_real)/SUM(l.Cantidad.Cant_necesaria))*100 , 'fm9990') || '%) - ' || Nombre || CHR(13) || CHR(10))).extract('//text()'), CHR(13) || CHR(10))
                                                                FROM PEDIDO l, Vacuna v
@@ -23,13 +23,13 @@ BEGIN
                                                                AND l.Vacuna = v.Codigo
                                                                GROUP BY v.Nombre)
             ELSE '0'
-        END "% y Cantidad de Vacunas por Tipo",
+        END AS "% y Cantidad de Vacunas por Tipo",
         CASE
             WHEN p.Codigo IN (SELECT DISTINCT Lugar
                             FROM PEDIDO
                             WHERE Organizacion IN (SELECT Codigo FROM ORGANIZACION WHERE Nombre = 'COVAX') ) THEN 'SI'
             ELSE 'NO'
-        END "¿El Pais forma parte del Mecanismo COVAX?"
+        END AS "¿El Pais forma parte del Mecanismo COVAX?"
         FROM LUGAR p
         WHERE p.Tipo = 'PAIS';
 END;

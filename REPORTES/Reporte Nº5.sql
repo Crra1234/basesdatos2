@@ -7,7 +7,7 @@ IS
 BEGIN
 ---------------------CONSULTA REPORTE 5------------------------------------
 OPEN Cur FOR
-SELECT p.Nombre AS "Nombre del Pais",
+SELECT DISTINCT  p.Nombre AS "Nombre del Pais",
        CASE
             WHEN 1 = 1 THEN ( SELECT COUNT(*)
                               FROM Lugar l, Paciente n
@@ -15,8 +15,8 @@ SELECT p.Nombre AS "Nombre del Pais",
                               AND n.Lugar = l.Codigo
                               AND l.Tipo = 'AREA')
             ELSE 0
-       END "Cantidad de Habitantes",
-       COUNT(DISRINCT v.Paciente) AS "Cantidad de vacunados", 
+       END AS "Cantidad de Habitantes",
+       COUNT(DISTINCT v.Paciente) AS "Cantidad de vacunados", 
        CASE
             WHEN 1 = 1 THEN to_char(((SELECT COUNT(DISTINCT Paciente)
                               FROM VACUNACION
@@ -33,7 +33,7 @@ SELECT p.Nombre AS "Nombre del Pais",
                                                                          AND n.Lugar = l.Codigo
                                                                          AND l.Tipo = 'AREA'))*100,'fm9990') || '%'
             ELSE '0'
-       END "% de Vacunados",
+       END AS "% de Vacunados",
        m.Nombre AS "Tipo de Vacuna de Utilizada"
 FROM Lugar a,Lugar p, Paciente h, VACUNACION v, Vacuna m
 WHERE a.Lugar = p.Codigo

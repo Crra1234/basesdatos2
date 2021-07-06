@@ -594,7 +594,7 @@ BEGIN
                     
                     FechaVac:=SYSDATE+NumAlt;
                     UPDATE VACUNACION v SET v.Periodo= Fecha(ADD_MONTHS(FechaVac,4),Null) WHERE  v.Vacuna=CodVac;
-
+                    DISTRIBUCION(CodArea, CodCent,)
                     CONTINUE;
                 else
                     SELECT * INTO CodVac

@@ -19,7 +19,7 @@ BEGIN
                               AND a.Tipo = 'AREA'
                               GROUP BY h.Grupo_Etario)
             ELSE '0'
-        END "Cantidad de Habitantes por Grupo Etario",
+        END AS "Cantidad de Habitantes por Grupo Etario",
         CASE
             WHEN 1 = 1 THEN (SELECT rtrim(xmlagg(xmlelement(PACIENTE, CASE
                                                                       WHEN h.Grupo_Etario = 'INFANCIA' THEN  ('• ' || to_char((COUNT(*)/(SELECT COUNT(*) 
@@ -44,7 +44,7 @@ BEGIN
                             AND a.Tipo = 'AREA'
                             GROUP BY h.Grupo_Etario)
             ELSE '0%'
-        END "Porcentaje de Habitantes por Grupo Etario"
+        END AS "Porcentaje de Habitantes por Grupo Etario"
 FROM LUGAR p
 WHERE p.Tipo = 'PAIS';
 END;

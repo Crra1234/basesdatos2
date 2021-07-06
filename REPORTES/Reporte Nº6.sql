@@ -23,7 +23,7 @@ SELECT  p.Nombre AS "Nombre del Pais",
                                                                                AND h.Lugar = a.Codigo
                                                                                AND a.Tipo = 'AREA')*100, 'fm9990')
             ELSE '0'
-        END "% de Vacunados"
+        END AS "% de Vacunados"
 FROM LUGAR p
 WHERE p.Tipo = 'PAIS';
 

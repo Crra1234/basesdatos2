@@ -11,7 +11,7 @@ SELECT p.Nombre AS "Pais",a.Codigo AS "Nº Pedido",
                              FROM PAGO m
                              WHERE m.Pedido = a.Codigo),'DD/MM/YYYY')
             ELSE 'NO'
-       END "Fecha Pago",
+       END AS "Fecha Pago",
        CASE
             WHEN 1 = 1 THEN TO_CHAR(((SELECT SUM(Monto)
                                       FROM PAGO
@@ -19,13 +19,13 @@ SELECT p.Nombre AS "Pais",a.Codigo AS "Nº Pedido",
                                                                 FROM PEDIDO
                                                                 WHERE Codigo = a.Codigo))*100,'fm9990') || '%'
             ELSE '0%'
-       END "Porcentaje Pagado",
+       END AS "Porcentaje Pagado",
        CASE
             WHEN 1 = 1 THEN TO_CHAR((SELECT SUM(Monto)
                                      FROM PAGO
                                      WHERE Pedido = a.Codigo),'L99999999.99')
             ELSE '$0'
-       END "Monto Pagado",
+       END AS "Monto Pagado",
        CASE
             WHEN 1 = 1 THEN  (SELECT TO_CHAR(((s.Monto_Total - SUM(k.Monto))/ s.Monto_Total)*100,'fm9990') || '%'
                               FROM PAGO k, PEDIDO s
@@ -33,7 +33,7 @@ SELECT p.Nombre AS "Pais",a.Codigo AS "Nº Pedido",
                               AND k.Pedido = s.Codigo
                               GROUP BY s.Monto_Total)
             ELSE '0%'
-       END "Porcentaje Pago Restante",
+       END AS "Porcentaje Pago Restante",
        CASE
             WHEN 1 = 1 THEN  (SELECT TO_CHAR(s.Monto_Total - SUM(k.Monto),'L99999999.99') 
                               FROM PAGO k, PEDIDO s
@@ -41,7 +41,7 @@ SELECT p.Nombre AS "Pais",a.Codigo AS "Nº Pedido",
                               AND k.Pedido = s.Codigo
                               GROUP BY s.Monto_Total)
             ELSE '0%'
-       END "Pago Restante",
+       END AS "Pago Restante",
        a.Financia || '%' AS "Distribucion porcentual de vacunas que el país puede disponer",
        CASE
             WHEN 1 = 1 THEN  (SELECT DISTINCT  rtrim(xmlagg(xmlelement(PEDIDO,TO_CHAR((SUM(c.Cantidad.Cant_real)/SUM(c.Cantidad.Cant_necesaria))*100,'fm9990') || '%' || ' - ' || w.Nombre || CHR(13) || CHR(10))).extract('//text()'), CHR(13) || CHR(10))
@@ -52,7 +52,7 @@ SELECT p.Nombre AS "Pais",a.Codigo AS "Nº Pedido",
                               AND d.Codigo = (SELECT Codigo FROM LUGAR WHERE Nombre = p.Nombre)
                               GROUP BY w.Nombre)
             ELSE '0%'
-       END "Distribucion de los diferentes tipos de vacunas a incluir",
+       END AS "Distribucion de los diferentes tipos de vacunas a incluir",
        CASE
             WHEN p.Nombre IN (SELECT o.Nombre
                              FROM EXCLUSION b INNER JOIN LUGAR o ON b.Lugar = o.Codigo
@@ -63,7 +63,7 @@ SELECT p.Nombre AS "Pais",a.Codigo AS "Nº Pedido",
                                                                            WHERE u.Lugar = (SELECT Codigo FROM LUGAR WHERE Nombre = p.Nombre)
                                                                            AND u.Periodo.Fecha_fin IS NULL ))
             ELSE 'N/A'
-       END "Restricciones locales del Pais",
+       END AS "Restricciones locales del Pais",
        TO_CHAR(a.Periodo.Fecha_Fin,'DD/MM/YYYY') AS "Fecha Estimada de Envio de Lotes",
        a.Estatus AS "Estatus"
 FROM PEDIDO a INNER JOIN LUGAR p ON a.Lugar = p.Codigo 
