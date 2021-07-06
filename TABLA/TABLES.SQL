@@ -203,13 +203,13 @@ CREATE TABLE PEDIDO(
 );
 
 CREATE TABLE PAGO(
+    Codigo NUMBER NOT NULL,
     Pedido NUMBER NOT NULL,
     Lugar NUMBER NOT NULL,
     Organizacion NUMBER NOT NULL,
-    Codigo NUMBER NOT NULL,
     Periodo FECHA,
     Monto NUMBER NOT NULL,
-    CONSTRAINT PK_Pago PRIMARY KEY (Lugar,Organizacion,Codigo, Pedido),
+    CONSTRAINT PK_Pago PRIMARY KEY (Codigo,Pedido,Lugar,Organizacion),
     CONSTRAINT FK_Pago_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo),
     CONSTRAINT FK_Pago_Organizacion FOREIGN KEY (Organizacion) REFERENCES ORGANIZACION(Codigo)
 );

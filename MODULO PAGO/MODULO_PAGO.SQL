@@ -102,7 +102,7 @@ BEGIN
    FROM  PAGO
    WHERE Pedido = CodPedi;
 
-   INSERT INTO PAGO VALUES (CodPedi, CodPais, CodOrg, CodPago + 1, Fecha(FechaAct,NULL), MontoActualizado);
+   INSERT INTO PAGO VALUES (CodPago + 1, CodPedi, CodPais, CodOrg, Fecha(FechaAct,NULL), MontoActualizado);
    DBMS_OUTPUT.PUT_LINE('El pago: ' || CodPago + 1 || ') Del pedido: ' ||CodPedi|| ')  se pagó la diferencia del monto total del pedido' || MontoActualizado || ' con la fecha de ' || FechaAct);
 
    --Se establece la confirmación de la distribución del pedido. (Flujo 1.3.2.2)
@@ -201,7 +201,7 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('Abonar 25%');
         MontoActualizado:= (MonTotal - MontoAcumulado)*0.25;
         --Se inserta el abono al monto total a pagar
-        INSERT INTO PAGO VALUES (CodPedi, CodPais, CodOrg, CodPago + 1, Fecha(FechaAct,NULL), MontoActualizado);
+        INSERT INTO PAGO VALUES (CodPago + 1, CodPedi, CodPais, CodOrg, Fecha(FechaAct,NULL), MontoActualizado);
         DBMS_OUTPUT.PUT_LINE('El pago: ' || CodPago + 1 || ') Del pedido: ' ||CodPedi|| ')  se abonó del monto total del pedido' || MontoActualizado || ' con la fecha de ' || FechaAct);
 
     ELSIF (PorcAbonar = 2) THEN --50%
@@ -210,7 +210,7 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('Abonar 50%');
         MontoActualizado:= (MonTotal - MontoAcumulado)*0.50;
         --Se inserta el abono al monto total a pagar
-        INSERT INTO PAGO VALUES (CodPedi, CodPais, CodOrg, CodPago + 1, Fecha(FechaAct,NULL), MontoActualizado);
+        INSERT INTO PAGO VALUES (CodPago + 1, CodPedi, CodPais, CodOrg, Fecha(FechaAct,NULL), MontoActualizado);
         DBMS_OUTPUT.PUT_LINE('El pago: ' || CodPago + 1 || ') Del pedido: ' ||CodPedi|| ')  se abonó del monto total del pedido' || MontoActualizado || ' con la fecha de ' || FechaAct);
 
     ELSIF (PorcAbonar = 3) THEN --75%
@@ -219,16 +219,16 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('Abonar 75%');
         MontoActualizado:= (MonTotal - MontoAcumulado)*0.75;
         --Se inserta el abono al monto total a pagar
-        INSERT INTO PAGO VALUES (CodPedi, CodPais, CodOrg, CodPago + 1, Fecha(FechaAct,NULL), MontoActualizado);
+        INSERT INTO PAGO VALUES (CodPago + 1, CodPedi, CodPais, CodOrg, Fecha(FechaAct,NULL), MontoActualizado);
         DBMS_OUTPUT.PUT_LINE('El pago: ' || CodPago + 1 || ') Del pedido: ' ||CodPedi|| ')  se abonó del monto total del pedido' || MontoActualizado || ' con la fecha de ' || FechaAct);
 
     ELSE --100%
-    
+
         DBMS_OUTPUT.PUT_LINE('');
         DBMS_OUTPUT.PUT_LINE('Abonar 100%');
         MontoActualizado:= MonTotal - MontoAcumulado;
         --Se inserta el abono al monto total a pagar
-        INSERT INTO PAGO VALUES (CodPedi, CodPais, CodOrg, CodPago + 1, Fecha(FechaAct,NULL), MontoActualizado);
+        INSERT INTO PAGO VALUES (CodPago + 1, CodPedi, CodPais, CodOrg, Fecha(FechaAct,NULL), MontoActualizado);
         DBMS_OUTPUT.PUT_LINE('El pago: ' || CodPago + 1 || ') Del pedido: ' ||CodPedi|| ')  se pagó la diferencia del monto total del pedido' || MontoActualizado || ' con la fecha de ' || FechaAct);
 
         --Se establece la confirmación de la distribución del pedido. (Flujo 1.3.2.2)
