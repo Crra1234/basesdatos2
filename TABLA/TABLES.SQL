@@ -194,6 +194,7 @@ CREATE TABLE PEDIDO(
     Vacuna NUMBER,
     Periodo FECHA,
     Cantidad Existencia,
+    Financia NUMBER,
     CONSTRAINT PK_Pedido PRIMARY KEY (Codigo,Organizacion,Lugar),
     CONSTRAINT FK_Pedido_Organizacion FOREIGN KEY (Organizacion) REFERENCES ORGANIZACION(Codigo),
     CONSTRAINT FK_Pedido_Lugar FOREIGN KEY (Lugar) REFERENCES LUGAR(Codigo),
