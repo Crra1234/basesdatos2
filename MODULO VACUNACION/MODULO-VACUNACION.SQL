@@ -357,7 +357,84 @@ BEGIN
     CLOSE Pacientes;
 END;
 
+CREATE OR REPLACE PROCEDURE Resta_recursos(CodVac NUMBER,CodGuantes NUMBER,CodJeringas NUMBER,CodAlcohol NUMBER, CodAlgodon NUMBER,CodCentro NUMBER)
+IS
+    CANT_SUMINISTRO NUMBER;
 
+BEGIN
+    SELECT d.Cantidad.Cant_real INTO CANT_SUMINISTRO
+    FROM Dosis d
+    WHERE d.Centro=CodCentro AND d.Vacuna=CodVac;
+
+    UPDATE Dosis d SET d.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE d.Vacuna=CodVac;
+
+    SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
+    FROM Inventario I
+    WHERE I.Centro=CodCentro AND I.Insumo=CodGuantes;
+
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodGuantes;
+
+    SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
+    FROM Inventario I
+    WHERE I.Centro=CodCentro AND I.Insumo=CodJeringas;
+
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodJeringas;
+
+    SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
+    FROM Inventario I
+    WHERE I.Centro=CodCentro AND I.Insumo=CodAlcohol;
+
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodAlcohol;
+
+    SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
+    FROM Inventario I
+    WHERE I.Centro=CodCentro AND I.Insumo=CodAlgodon;
+
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodAlgodon;
+
+END;
+
+--Procedimiento para generar efecto secundario al paciente vacunado (Flujo 6.3.3.3.2.3.1)
+CREATE OR REPLACE PROCEDURE GENERAR_EFECTOS_SECUNDARIOS(CodVacunacion NUMBER,Codvac NUMBER, CodCent NUMBER, CodPac NUMBER, FechaVac Date)
+IS
+Probabilidad NUMBER(38,0);
+DiaEfec NUMBER;
+FechaInicio Date;
+FechaFinal Date;
+Efecto NUMBER;
+
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('------------------EFECTOS SECUNDARIOS POR PACIENTE VACUNADO --------------------------');
+    
+    --Probabilidad de que el paciente tenga efectos secundarios es de 25%. 1-25%: Tiene efecto secundario; 2-50%, 3-75%, 4-100%: No tendrá efecto secundario.
+        SELECT DBMS_RANDOM.value(1,3) INTO Probabilidad 
+        FROM dual;
+        DBMS_OUTPUT.PUT_LINE(Probabilidad);
+        IF (Probabilidad = 1) THEN
+
+            --Fecha en que inicia el efecto secundario, será 2 días despues de la vacunación.
+            FechaInicio := FechaVac + 2;
+
+            --DiaEfec (2-10 días) lo que durará una vez que inicie el efecto secundario del paciente.                   
+            SELECT DBMS_RANDOM.value(2,10) INTO DiaEfec
+            FROM dual;
+
+            FechaFinal:=  FechaInicio + DiaEfec;
+
+            SELECT * 
+            INTO Efecto
+            FROM(
+                SELECT Codigo 
+                FROM EFECTO_SECUNDARIO
+                ORDER BY dbms_random.random)
+            WHERE rownum < 2;
+
+            --Se inserta el registro de la reacción por la vacuna al paciente
+            INSERT INTO REGISTRO_REACCION VALUES(CodVacunacion,Codvac, CodCent, CodPac, Efecto, FECHA(FechaInicio, FechaFinal));
+
+        END IF;
+
+END;
 
 --Procedumiento de asignacion de fechas (Y vacunacion) de los pacientes--
 CREATE OR REPLACE PROCEDURE Asignacion_Vacunacion(Codarea NUMBER)
@@ -370,6 +447,13 @@ IS
     NumAlt Number;
     Preferencia Number;
     Cant_Necesaria NUMBER;
+    Codigo_Temp NUMBER;
+
+    CodGuantes NUMBER;
+    CodJeringas NUMBER;
+    CodAlcohol NUMBER;
+    CodAlgodon NUMBER;
+    NumRand NUMBER;
     
     
     -----CURSOR QUE CONTIENE LOS DATOS LOS PACIENTES DEL AREA SUMINISTRADA-----
@@ -392,17 +476,15 @@ BEGIN
         FETCH Pacientes INTO CodPac;
         EXIT WHEN Pacientes%notfound; 
         
-        NumAlt:=-1;
-        SELECT V.Paciente INTO NumAlt
+        SELECT NVL(V.Paciente,-1) INTO NumAlt
         FROM VACUNACION V WHERE V.Paciente=CodPac;
         
         DBMS_OUTPUT.PUT_LINE('---------------------PACIENTES VACUNADOS------------------------');
         --Se verifica si el paciente ya esta asignado a una lista de espera--
-        IF (NumAlt = -1) THEN
+        IF (NumAlt != -1) THEN
             select codigo into codcent from CENTRO_VACUNACION;
         
-        ELSE
-            
+        ELSE 
             --Se selecciona aleatoriamente si el paciente tiene preferencia o no, 1 siginifica que si tiene, 0 significa lo contrario--
             SELECT DBMS_RANDOM.value(0,1) INTO Preferencia
             FROM dual;
@@ -440,8 +522,12 @@ BEGIN
                     -- Cambio de 4 meses a 1 FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 4);                   
                     FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 1);
                     
-                    INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,FechaVac));
-                    INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
+                    SELECT NVL(MAX(V.CODIGO), 1) INTO Codigo_Temp FROM VACUNACION V;
+                    Codigo_temp := Codigo_Temp+1;
+                    
+                    INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(FechaVac,FechaVac));
+                    Codigo_temp := Codigo_Temp+1;
+                    INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
                     CONTINUE;
 
                     --SUMINISTROS_DISPONIBLES(Codarea,CodCent,CodVac);
@@ -451,24 +537,96 @@ BEGIN
             ELSE
             
                 --Se selecciona una vacuna aleatoria que dispone el centro de vacunacion del area-- (6.3.3.3.1)
-                SELECT * INTO CodVac
+                SELECT NVL(Vaccine,-1) INTO CodVac
                 FROM (
-                
-                SELECT d.Vacuna
+                SELECT d.Vacuna as Vaccine
                 FROM Dosis d
                 WHERE 
                 d.Centro=CodCent 
                 and 
                 (d.Cantidad.Cant_real > 0)
                 ORDER BY dbms_random.random
-                
                 )
                 WHERE rownum<2;
+
             
             END IF;
-            
-                NumAlt:=-1;
-                SELECT I.Paciente into NumAlt
+
+            --Se selecciona el codigo de insumo de el insumo tipo "Guante" que tenga el centro.--
+                SELECT NVL(I.Insumo,-1) INTO CodGuantes
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Guantes'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+                --Se selecciona el codigo de insumo de el insumo tipo "Jeringas" que tenga el centro.--
+                SELECT NVL(I.Insumo,-1) INTO CodJeringas
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Jeringas'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+                --Se selecciona el codigo de insumo de el insumo tipo 'Alcohol' que tenga el centro.--
+                SELECT NVL(I.Insumo,-1) INTO CodAlcohol
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Alcohol'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+                --Se selecciona el codigo de insumo de el insumo tipo 'Algodon' que tenga el centro.--
+                SELECT NVL(I.Insumo,-1) INTO CodAlgodon
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Algodon'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+                IF (CodVac= -1) OR (CodGuantes= -1) OR (CodJeringas= -1) OR (CodAlcohol= -1) OR (CodAlgodon= -1) THEN                   
+                    
+                    --ASIGNACION DE OTRA FECHA DE VACUNACIÓN DEBIDO A QUE NO HAY RECURSOS DISPONIBLE              
+                    SELECT DBMS_RANDOM.value(1,27) INTO NumAlt
+                    FROM dual;
+
+                    -- Cambio de 4 meses a 1 FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 4);                   
+                    FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 1);
+                    
+                    SELECT NVL(MAX(V.CODIGO), 1) INTO Codigo_Temp FROM VACUNACION V;
+                    Codigo_temp := Codigo_Temp+1;
+                    
+                    INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(FechaVac,FechaVac));
+                    Codigo_temp := Codigo_Temp+1;
+                    INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
+                    CONTINUE;
+
+                    --SUMINISTROS_DISPONIBLES(Codarea,CodCent,CodVac);
+                    
+                END IF;
+
+
+                SELECT NVL(I.Paciente,-1) into NumAlt
                 FROM INFECCION I WHERE I.Paciente=CodPac;
             
             --Se establecen las prioridades en el variable de preferencia, si esta infectado se vacuna en menos de un mes, si es anciano, se vacuna en un mes, si es adulto, se vacuna en 2 meses, y si es joven, en 3 meses.
@@ -479,9 +637,9 @@ BEGIN
                 from Paciente p
                 where p.Codigo = CodPac;
                 
-                IF (Grupoetario = 'ANCIANO') THEN
+                IF (Grupoetario = 'VEJEZ') THEN
                    Preferencia := 1;
-                ELSIF (Grupoetario = 'ADULTO') THEN
+                ELSIF (Grupoetario = 'ADULTEZ') THEN
                     Preferencia := 2;
                 ELSE 
                     Preferencia := 3;
@@ -496,13 +654,22 @@ BEGIN
                     FechaVac := ADD_MONTHS(SYSDATE + NumAlt, Preferencia);
                 
         
+            SELECT NVL(MAX(V.CODIGO), 1) INTO Codigo_Temp FROM VACUNACION V;
+            Codigo_temp := Codigo_Temp+1;
+
             -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
-            INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,Null));
-            --GENERAR_EFECTOS_SECUNDARIOS(CodVac, CodCent, CodPac, FECHA.Fecha_inicio);
+            INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(FechaVac,Null));
+            Resta_recursos(CodVac,CodGuantes,CodJeringas,CodAlcohol,CodAlgodon,CodCent);
+            SELECT DBMS_RANDOM.value(0,13) INTO NumAlt FROM dual;
+            SELECT DBMS_RANDOM.value(13,27) INTO NumRand FROM dual;
+            GENERAR_EFECTOS_SECUNDARIOS(Codigo_temp,CodVac,CodCent, CodPac,FechaVac);
 
             --ASIGNACION DE LA SEGUNDA DOSIS PARA EL PACIENTE
-            INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
-
+            INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
+            Resta_recursos(CodVac,CodGuantes,CodJeringas,CodAlcohol,CodAlgodon,CodCent);
+            SELECT DBMS_RANDOM.value(0,13) INTO NumAlt FROM dual;
+            SELECT DBMS_RANDOM.value(13,27) INTO NumRand FROM dual;
+            GENERAR_EFECTOS_SECUNDARIOS(Codigo_temp,CodVac,CodCent, CodPac,ADD_MONTHS(FechaVac,1));
             
             
         END IF;
@@ -513,47 +680,6 @@ END;
 
 
 
---Procedimiento para generar efecto secundario al paciente vacunado (Flujo 6.3.3.3.2.3.1)
-CREATE OR REPLACE PROCEDURE GENERAR_EFECTOS_SECUNDARIOS(Codvac NUMBER, CodCent NUMBER, CodPac NUMBER, FechaVac Date)
-IS
-Probabilidad NUMBER(38,0);
-DiaEfec NUMBER;
-FechaInicio Date;
-FechaFinal Date;
-Efecto NUMBER;
-
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('------------------EFECTOS SECUNDARIOS POR PACIENTE VACUNADO --------------------------');
-    
-    --Probabilidad de que el paciente tenga efectos secundarios es de 25%. 1-25%: Tiene efecto secundario; 2-50%, 3-75%, 4-100%: No tendrá efecto secundario.
-        SELECT DBMS_RANDOM.value(1,4) INTO Probabilidad 
-        FROM dual;
-        DBMS_OUTPUT.PUT_LINE(Probabilidad);
-        IF (Probabilidad = 1) THEN
-
-            --Fecha en que inicia el efecto secundario, será 2 días despues de la vacunación.
-            FechaInicio := FechaVac + 2;
-
-            --DiaEfec (2-10 días) lo que durará una vez que inicie el efecto secundario del paciente.                   
-            SELECT DBMS_RANDOM.value(2,10) INTO DiaEfec
-            FROM dual;
-
-            FechaFinal:=  FechaInicio + DiaEfec;
-
-            SELECT * 
-            INTO Efecto
-            FROM(
-                SELECT Codigo 
-                FROM EFECTO_SECUNDARIO
-                ORDER BY dbms_random.random)
-            WHERE rownum < 2;
-
-            --Se inserta el registro de la reacción por la vacuna al paciente
-            INSERT INTO REGISTRO_REACCION VALUES(Codvac, CodCent, CodPac, Efecto, FECHA(FechaInicio, FechaFinal));
-
-        END IF;
-
-END;
 
 --Se hace cuenta los suministros de los centro de vacunacion de un area, con un insumo determinado--
 CREATE OR REPLACE FUNCTION CREATE_PEDIDO_INVENTARIO(Area NUMBER,Insumo_ext NUMBER) return NUMBER
@@ -756,7 +882,7 @@ BEGIN
             ADD_INSUMOS(Centro);
             ADD_DOSIS(Centro);
             Asignacion_lista_espera(Areas(x)(j));
-            --Asignacion_Vacunacion(Areas(x)(j));
+            Asignacion_Vacunacion(Areas(x)(j));
         END LOOP;
     END LOOP;
 END;
