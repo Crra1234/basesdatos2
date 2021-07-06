@@ -1,15 +1,20 @@
-CREATE OR REPLACE PROCEDURE REALIZAR_PEDIDO(CodSumi NUMBER, CodArea NUMBER, NomSumi VARCHAR2)
+CREATE OR REPLACE PROCEDURE REALIZAR_PEDIDO(CodSumi NUMBER, CodArea NUMBER, NomSumi VARCHAR2, CodCen number)
 IS
 DistriCovax NUMBER(38,0);
-ParteCovax NUMBER(38,0);
 CodPais NUMBER;
-Financiamiento NUMBER;
-RestriccionLocal VARCHAR(100);
 UltimoPedido NUMBER;
 CodOrgaCovax NUMBER;
-CodOrgaAle NUMBER;
-CodVacuAlea NUMBER;
-CantAleVacu NUMBER(38,0);
+CantidadNece NUMBER;
+NumRandom NUMBER(38,0);
+CantNecePedi NUMBER;
+MontoTotal NUMBER;
+Fecha_Inicio DATE;
+Fecha_Final DATE;
+ParteCovax NUMBER(38,0);
+Financiamiento NUMBER;
+Financ NUMBER;
+RestriccionLocal VARCHAR(100);
+PedidoAgain NUMBER(38,0);
 BEGIN
 
    --Obtener el código del país
@@ -17,8 +22,7 @@ BEGIN
    FROM LUGAR p INNER JOIN LUGAR a ON p.Codigo = a.Lugar
    WHERE a.Codigo = CodArea 
    AND p.Tipo= 'PAIS'
-   AND a.Tipo= 'AREA';
-   
+   AND a.Tipo= 'AREA'
 
    IF(VERIFICACION_SUMINISTRO(NomSumi) = 'VACUNA') THEN --Si se pidió vacuna (Flujo 2)
 
@@ -32,24 +36,100 @@ BEGIN
       IF(DistriCovax = 1) THEN
 
          DBMS_OUTPUT.PUT_LINE('El país desea la distribución del COVAX');
+
          IF (PERTENENCIA_COVAX(CodPais)=1) THEN -- Si pertenece al COVAX (Flujo 2.3.2.2)
 
-            IF (VERIFICAR_FINANCIAMIENTO(CodPais) = 1) THEN --Si el país está completamente financiado 2.3.2.3.2.4.3
+            DBMS_OUTPUT.PUT_LINE('El país pertenece COVAX');
 
-               UltimoPedido:=ULTIMO_PEDIDO;
-               CodOrgaCovax:=CODIGO_COVAX;
+            IF (VERIFICAR_FINANCIAMIENTO(CodPais) = 1) THEN --Si el país está completamente financiado (Flujo 2.3.2.3.2.4.3)
 
-               INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, ,'ENVIADO', NULL, CodSumi, , ,Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+               DBMS_OUTPUT.PUT_LINE('El país está completamente financiado');
+
+               UltimoPedido:=ULTIMO_PEDIDO;  --Ultimo pedido del pais
+               CodOrgaCovax:=CODIGO_COVAX;   --Codigo del COVAX
+
+               --Cantidad necesaria del centro
+               SELECT d.Cantidad.Cant_necesaria
+               INTO CantidadNece 
+               FROM DOSIS d
+               WHERE d.Centro = CodCen
+               AND d.Vacuna = CodSumi;
+
+               SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+               FROM dual;
+
+               CantNecePedi:= CantidadNece + NumRandom; --Cantidad Necesaria del pedido
+
+               MontoTotal:= CantNecePedi * 1000;
+
+               SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-01-01','J'),TO_CHAR(DATE '2021-03-01','J'))),'J')  
+               INTO Fecha_Inicio 
+               FROM DUAL;
+
+               SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
+               INTO Fecha_Final 
+               FROM DUAL;
+
+               INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, MontoTotal,'ENVIADO', NULL, CodSumi, Cantidad(NumRandom,CantNecePedi), Periodo(Fecha_Inicio,Fecha_Final),100); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
                DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaCovax|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodSumi|| '' |||| '' |||| );
                DBMS_OUTPUT.PUT_LINE('Se inicia el modulo de distribucion');
 
             ELSE
 
-               --  Se cancela la inscripción al COVAX (Flujo 2.3.2.3.3.1)
+               DBMS_OUTPUT.PUT_LINE('El país no está completamente financiado');
 
-            END IF;   
+                  CodOrgaCovax:=CODIGO_COVAX; --Se selecciona aleatoriamente una organización para realizar el pedido (Flujo 2.3.3.1)   
+                  UltimoPedido:=ULTIMO_PEDIDO;
+                  Financ:= GET_FINANCIAMIENTO(CodPais);
 
-         ELSE -- No pertenece al COVAX (Flujo 2.3.2.3)
+                  IF(VERIFICACION_OMS(CodSumi) = 1) THEN --Si la vacuna está certificada por la OMS (Flujo 2.3.3.3)
+
+                     SELECT d.Cantidad.Cant_necesaria
+                     INTO CantidadNece 
+                     FROM DOSIS d
+                     WHERE d.Centro = CodCen
+                     AND d.Vacuna = CodSumi;
+
+                     SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+                     FROM dual;
+
+                     CantNecePedi:= CantidadNece + NumRandom;
+                     MontoTotal:= CantNecePedi * 1000;
+
+                     SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
+                     INTO Fecha_Inicio 
+                     FROM DUAL;
+
+                     SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-08-01','J'),TO_CHAR(DATE '2021-09-01','J'))),'J')  
+                     INTO Fecha_Final 
+                     FROM DUAL;      
+
+                     INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Periodo(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+                     DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaAle|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodVacuAlea|| '' |||| '' |||| );
+
+                     --DITRIBUCION
+
+                  ELSE --Si No está certificada por la OMS la vacuna (Flujo 2.3.3.4)
+
+                     DBMS_OUTPUT.PUT_LINE('La vacuna no está certificada por la OMS. Denegada solicitud del pedido');
+
+                     SELECT DBMS_RANDOM.value(1,50) INTO VacunaAgain
+                     FROM dual;
+
+                     --Si se desea selecciona otra vacuna
+                     IF(VacunaAgain = 1) THEN
+                        REALIZAR_PEDIDO(CodSumi NUMBER, CodArea NUMBER, NomSumi VARCHAR2, CodCen NUMBER)
+                     ELSE
+                        --MODULO DISTRIBUCION
+                     END IF;
+
+                  END IF;
+
+            END IF;
+
+         ELSE
+
+            DBMS_OUTPUT.PUT_LINE('El país no pertenece COVAX');
 
             --Random para saber si el país quire ser parte del COVAX
             SELECT DBMS_RANDOM.value(0,1) INTO ParteCovax
@@ -64,103 +144,157 @@ BEGIN
                --Se obtiene el país tiene restricción local
                RestriccionLocal:= VERIFICAR_RESTRICCIONES(CodPais);
 
-               IF(Financiamiento = 100) THEN --Si el país está completamente financiado (Flujo 2.3.2.3.2.4.3)
+               IF(Financiamiento = 100) THEN --Si el país está completamente financiado (Flujo 2.3.2.3.2.4.3
 
-                  --Se selecciona la cantidad de vacunas que se van a comprar en base a la población. (Flujo 2.3.2.3.2.4.3.2)
+                  DBMS_OUTPUT.PUT_LINE('El país está completamente financiado');
 
-                  UltimoPedido:=ULTIMO_PEDIDO;
-                  CodOrgaCovax:=CODIGO_COVAX;
+                  UltimoPedido:=ULTIMO_PEDIDO;  --Ultimo pedido del pais
+                  CodOrgaCovax:=CODIGO_COVAX;   --Codigo del COVAX
 
-                  INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, ,'ENVIADO', NULL, CodSumi, , ,Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+                  --Cantidad necesaria del centro
+                  SELECT d.Cantidad.Cant_necesaria
+                  INTO CantidadNece 
+                  FROM DOSIS d
+                  WHERE d.Centro = CodCen
+                  AND d.Vacuna = CodSumi;
+
+                  SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+                  FROM dual;
+
+                  CantNecePedi:= CantidadNece + NumRandom; --Cantidad Necesaria del pedido
+
+                  MontoTotal:= CantNecePedi * 1000;
+
+                  SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-01-01','J'),TO_CHAR(DATE '2021-03-01','J'))),'J')  
+                  INTO Fecha_Inicio 
+                  FROM DUAL;
+
+                  SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
+                  INTO Fecha_Final 
+                  FROM DUAL;
+
+                  INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaCovax, MontoTotal,'ENVIADO', NULL, CodSumi, Cantidad(NumRandom,CantNecePedi), Periodo(Fecha_Inicio,Fecha_Final),100); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
                   DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaCovax|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodSumi|| '' |||| '' |||| );
+                  DBMS_OUTPUT.PUT_LINE('Se inicia el modulo de distribucion');
 
                ELSE
 
-                  --  Se cancela la inscripción al COVAX (Flujo 2.3.2.3.3.1)
+                  DBMS_OUTPUT.PUT_LINE('No está completamente financiado');
+
+                  CodOrgaCovax:=CODIGO_COVAX; --Se selecciona aleatoriamente una organización para realizar el pedido (Flujo 2.3.3.1)   
+                  UltimoPedido:=ULTIMO_PEDIDO;
+
+                  IF(VERIFICACION_OMS(CodSumi) = 1) THEN --Si la vacuna está certificada por la OMS (Flujo 2.3.3.3)
+
+                     SELECT d.Cantidad.Cant_necesaria
+                     INTO CantidadNece 
+                     FROM DOSIS d
+                     WHERE d.Centro = CodCen
+                     AND d.Vacuna = CodSumi;
+
+                     SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+                     FROM dual;
+
+                     CantNecePedi:= CantidadNece + NumRandom;
+
+                     MontoTotal:= CantNecePedi * 1000;
+
+                     SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
+                     INTO Fecha_Inicio 
+                     FROM DUAL;
+
+                     SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-08-01','J'),TO_CHAR(DATE '2021-09-01','J'))),'J')  
+                     INTO Fecha_Final 
+                     FROM DUAL;   
+
+                     INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Periodo(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), Financiamiento); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+                     DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaAle|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodVacuAlea|| '' |||| '' |||| );
+
+                     --DITRIBUCION
+
+                  ELSE --Si No está certificada por la OMS la vacuna (Flujo 2.3.3.4)
+
+                     DBMS_OUTPUT.PUT_LINE('La vacuna no está certificada por la OMS. Denegada solicitud del pedido');
+
+                     SELECT DBMS_RANDOM.value(1,50) INTO PedidoAgain
+                     FROM dual;
+
+                     --Si se desea selecciona otra vacuna
+                     IF(PedidoAgain = 1) THEN
+                        REALIZAR_PEDIDO(CodSumi NUMBER, CodArea NUMBER, NomSumi VARCHAR2, CodCen NUMBER)
+                     ELSE
+                        --MODULO DISTRIBUCION
+                     END IF;
+
+                  END IF;
 
                END IF;
 
-            ELSE --No desea ser parte del mecanismo COVAX (Flujo 2.3.2.3.3)
-
-               --  Se cancela la inscripción al COVAX (Flujo 2.3.2.3.3.1)
-
-            END IF;
-
          END IF;
 
-      --El pais no desea usar la distribución COVAX (Flujo 2.3.3)
       ELSE
 
-         CodOrgaAle:= ORGANIZACION_ALEATORIA; --Se selecciona aleatoriamente una organización para realizar el pedido (Flujo 2.3.3.1)
-         CodVacuAlea:=VACUNA_ALEATORIA; --Se selecciona aleatoriamente la vacuna a comprar para el pedido. (Flujo 2.3.3.2) 
-         
-         IF(VERIFICACION_OMS(CodVacuAlea) = 1) THEN --Si la vacuna está certificada por la OMS (Flujo 2.3.3.3)
+         DBMS_OUTPUT.PUT_LINE('El país no desea la distribución del COVAX');
 
-            SELECT DBMS_RANDOM.value(50,60) INTO CantAleVacu --.Se selecciona la cantidad (50-60) de vacunas que se van a comprar (Flujo 2.3.3.3.1)
-            FROM dual;
+         NOT_COVAX(CodSumi, CodArea, NomSumi, CodCen);
 
-            UltimoPedido:=ULTIMO_PEDIDO;
+      END IF;      
 
-            INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, ,'EN PROCESO', NULL, CodVacuAlea, ,Cantidad(CantAleVacu,0) ,0); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
-            DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaAle|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodVacuAlea|| '' |||| '' |||| );
+   ELSE
 
-            --Se va para el paso (Flujo 2.2.1)
+      DBMS_OUTPUT.PUT_LINE('Se pidió Insumos');
 
-         ELSE --Si No está certificada por la OMS la vacuna (Flujo 2.3.3.4)
+      CodOrgaAle:= ORGANIZACION_ALEATORIA;
+      UltimoPedido:=ULTIMO_PEDIDO;
 
-            DBMS_OUTPUT.PUT_LINE('La vacuna no está certificada por la OMS. Denegada solicitud del pedido');
+      SELECT i.Cantidad.Cant_necesaria
+      INTO CantidadNece 
+      FROM INVENTARIO i
+      WHERE i.Centro = CodCen
+      AND i.Insumo = CodSumi;
 
-         END IF;
+      SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+      FROM dual;
 
+      CantNecePedi:= CantidadNece + NumRandom;
+      MontoTotal:= CantNecePedi * 1000;
+
+      INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', CodSumi, NULL, Cantidad(NumRandom,CantNecePedi), Periodo(Fecha_Inicio,Fecha_Final),0); 
+      DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaCovax|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, del insumo' ||CodSumi|| '' |||| '' |||| );
+
+      
+      SELECT DBMS_RANDOM.value(1,50) INTO PedidoAgain--Desea crear otra orden de compra (Flujo 3.2.3.5)
+      FROM dual;
+
+      IF(PedidoAgain = 1) THEN
+         REALIZAR_PEDIDO(CodSumi NUMBER, CodArea NUMBER, NomSumi VARCHAR2, CodCen NUMBER)
+      ELSE
+         --MODULO PAGOS
       END IF;
-   
-   ELSE --Si no se pidió vacunas
-
-      DBMS_OUTPUT.PUT_LINE('Se pidió insumos');
-
-      PEDIDOS_INSUMO(CodArea NUMBER, CodSumi NUMBER, 0, TipoSumi);
-
-   END IF;
+   END;
 
 END;
 
 
-CREATE OR REPLACE FUNCTION PERTENENCIA_COVAX(CodPais NUMBER) RETURN NUMBER
-IS
-Pertenece NUMBER;
-BEGIN
-   SELECT
-         CASE
-            WHEN  'COVAX' = ANY (SELECT o.Nombre 
-                  FROM ORGANIZACION o
-                  WHERE o.Codigo = (SELECT pe.Organizacion
-                                    FROM PEDIDO pe
-                                    WHERE pe.Lugar = CodPais)) THEN 1
-         ELSE 0
-         END Clasificacion
-   INTO Pertenece
-   FROM Dual;
-
-   RETURN Pertenece;
-   
-END;
 
 --Se verifica si el país esta finaciado completamente
 CREATE OR REPLACE FUNCTION VERIFICAR_FINANCIAMIENTO(CodPais) RETURN INTEGER
 IS
-UltimoPedido NUMBER;
 PorceFinan NUMBER;
 BEGIN
 
-   --Ultimo pedido hecho por el país
-   SELECT MAX(Codigo) INTO UltimoPedido
-   FROM PEDIDO
-   WHERE Lugar = CodPais;
-
-   --Verifica con el ultimo pedido del pais el porcentaje de financiamiento
-   SELECT Financia INTO PorceFinan
-   FROM PEDIDO 
-   WHERE Codigo = UltimoPedido;
+   --Busca aunque sea un solo pedido que tenga finanza
+   SELECT DISTINCT   CASE
+                     WHEN p.Organizacion = (SELECT
+                                       FROM ORGANIZACION
+                                       WHERE o.Nombre = 'COVAX') THEN p.Financia
+                     ELSE 0
+                     END
+   INTO PorceFinan
+   FROM PEDIDO p, ORGANIZACION o
+   WHERE p.Lugar = CodPais
+   AND p.Organizacion = o.Codigo
+   AND o.Nombre = 'COVAX';
 
    IF(PorceFinan = 100) THEN
       RETURN 1;
@@ -213,28 +347,48 @@ BEGIN
 
 END;
 
---Verifica que restricciones tiene el pais
-CREATE OR REPLACE FUNCTION VERIFICAR_RESTRICCIONES(CodPais) RETURN VARCHAR
+--Se le asiganará al país un financiamiento aleatorio
+CREATE OR REPLACE FUNCTION ASIGNAR_FINANCIAMIENTO RETURN NUMBER
 IS
-RestLocal VARCHAR2(100);
+FinanAlea NUMBER(38,0);
 BEGIN
-   
-   SELECT r.Descripccion
-   INTO RestLocal
-   FROM RESTRICCION_LOCAL r
-   WHERE r.Codigo = (SELECT e.Restriccion
-                     FROM EXCLUSION e
-                     WHERE e.Lugar = CodPais
-                     AND e.Fecha_Fecha_fin IS NULL);
 
-   RETURN RestLocal;
+   SELECT DBMS_RANDOM.value(0,4) INTO FinanAlea
+   FROM dual;
 
-   EXCEPTION
-      WHEN NO_DATA_FOUND THEN
-        RETURN NULL;
+   IF (FinanAlea = 0) THEN --0%
+
+      DBMS_OUTPUT.PUT_LINE('');
+      DBMS_OUTPUT.PUT_LINE('El país será autofinanciado 0%');
+      Return 0;
+
+   ELSIF (PorcAbonar = 1) THEN --25%
+
+      DBMS_OUTPUT.PUT_LINE('');
+      DBMS_OUTPUT.PUT_LINE('El país será financiado por un 25%');
+      Return 25;
+
+   ELSIF (PorcAbonar = 2) THEN --50%
+
+      DBMS_OUTPUT.PUT_LINE('');
+      DBMS_OUTPUT.PUT_LINE('El país será financiado por un 50%');
+      Return 50;
+
+   ELSIF (PorcAbonar = 3) THEN --75%
+
+      DBMS_OUTPUT.PUT_LINE('');
+      DBMS_OUTPUT.PUT_LINE('El país será financiado por un 75%');
+      Return 75;
+
+   ELSE --100%
+
+      DBMS_OUTPUT.PUT_LINE('');
+      DBMS_OUTPUT.PUT_LINE('El país será financiado por un 100%');
+      Return 100;
+
+   END IF;
 
 END;
-
 
 --Se obtendrá una organización aleatoria distinta del COVAX
 CREATE OR REPLACE FUNCTION ORGANIZACION_ALEATORIA RETURN NUMBER
@@ -247,11 +401,30 @@ BEGIN
          SELECT Codigo
          FROM ORGANIZACION
          WHERE Nombre <> 'COVAX'
+         AND Nombre <> 'OMS'
          ORDER BY dbms_random.random)
       INTO CodOrga
       WHERE  rownum < 2;
 
    RETURN CodOrga;
+
+END;
+
+--Se obtendrá una vacuna aleatoria
+CREATE OR REPLACE FUNCTION VACUNA_ALEATORIA RETURN NUMBER
+IS
+CodVacuna NUMBER;
+BEGIN
+
+      SELECT * 
+         FROM (
+         SELECT Codigo
+         FROM VACUNA
+         ORDER BY dbms_random.random)
+      INTO CodVacuna
+      WHERE  rownum < 2;
+
+   RETURN CodVacuna;
 
 END;
 
@@ -318,23 +491,97 @@ BEGIN
    Return CodCovax;
 END;
 
-CREATE OR REPLACE PROCEDURE PEDIDOS_INSUMO(CodArea NUMBER, CodSumi NUMBER, TipoSumi NUMBER, CodPais NUMBER)
+--Obtener el financiamiento del pais
+CREATE OR REPLACE FUNCTION GET_FINANCIAMIENTO(CodPais NUMBER) RETURN NUMBER
 IS
+Finan NUMBER;
 BEGIN
+   SELECT DISTINCT p.Financia
+   INTO Finan
+   FROM PEDIDO p, ORGANIZACION o
+   WHERE p.Lugar = CodPais
+   AND p.Organizacion = o.Codigo
+   AND o.Nombre = 'COVAX';
 
-   IF (PEDIDOS_PENDIENTE(CodAreA, CodSumi, TipoSumi) = 0) THEN --Si el país tiene una orden de compra de insumos (Flujo 3.2.2)
-
-   ELSE -- Si No el país tiene una orden de compra de insumos (Flujo 3.2.3)
-      
-      CREACION_PEDIDO_INSUMO;
-
-   END IF;
-
+   RETURN Finan;
 END;
 
-CREATE OR REPLACE PROCEDURE CREACION_PEDIDO_INSUMO
-IS
 
+--
+CREATE OR REPLACE PROCEDURE NOT_COVAX(CodSumi NUMBER, CodArea NUMBER, NomSumi VARCHAR2, CodCen NUMBER) 
+IS
+UltimoPedido NUMBER;
+CodOrgaAle NUMBER;
+CantidadNece NUMBER;
+NumRandom NUMBER;
+CantNecePedi NUMBER;
+Fecha_Inicio DATE;
+Fecha_Final DATE;
+VacunaAgain NUMBER(38,0);
 BEGIN
-   
+   CodOrgaAle:= ORGANIZACION_ALEATORIA; --Se selecciona aleatoriamente una organización para realizar el pedido (Flujo 2.3.3.1)   
+   UltimoPedido:=ULTIMO_PEDIDO;
+
+   IF(VERIFICACION_OMS(CodSumi) = 1) THEN --Si la vacuna está certificada por la OMS (Flujo 2.3.3.3)
+
+      SELECT d.Cantidad.Cant_necesaria
+      INTO CantidadNece 
+      FROM DOSIS d
+      WHERE d.Centro = CodCen
+      AND d.Vacuna = CodSumi;
+
+      SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
+      FROM dual;
+
+      CantNecePedi:= CantidadNece + NumRandom;
+
+      MontoTotal:= CantNecePedi * 1000;
+
+      SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-01-01','J'),TO_CHAR(DATE '2021-03-01','J'))),'J')  
+      INTO Fecha_Inicio 
+      FROM DUAL;
+
+      SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
+      INTO Fecha_Final 
+      FROM DUAL;      
+
+      INSERT INTO PEDIDO VALUES(UltimoPedido + 1, CodPais, CodOrgaAle, MontoTotal,'EN PROCESO', NULL, CodSumi, Periodo(Fecha_Inicio,Fecha_Final), Cantidad(NumRandom,CantNecePedi), 0); --Se confirma la orden de compra de las dosis de las vacunas para distribuirse. (Flujo 2.3.2.3.2.4.3.3)
+      DBMS_OUTPUT.PUT_LINE('Se registra el pedido ' ||UltimoPedido + 1||  'del país ' ||CodPais|| ' con la organización ' ||CodOrgaAle|| ', por el monto de ' || || ', el pedido queda con el estatus ENVIADO, de la vacuna' ||CodVacuAlea|| '' |||| '' |||| );
+
+      --DITRIBUCION
+
+   ELSE --Si No está certificada por la OMS la vacuna (Flujo 2.3.3.4)
+
+      DBMS_OUTPUT.PUT_LINE('La vacuna no está certificada por la OMS. Denegada solicitud del pedido');
+
+      SELECT DBMS_RANDOM.value(1,50) INTO VacunaAgain
+      FROM dual;
+
+      --Si se desea selecciona otra vacuna
+      IF(VacunaAgain = 1) THEN
+         REALIZAR_PEDIDO(CodSumi NUMBER, CodArea NUMBER, NomSumi VARCHAR2, CodCen NUMBER)
+      ELSE
+         --MODULO DISTRIBUCION
+      END IF;
+
+   END IF;
+END;
+
+
+--Escoger un insumo aleatorio
+CREATE OR REPLACE FUNCTION INSUMO_ALEATORIO RETURN NUMBER
+IS
+CodInsu NUMBER;
+BEGIN
+
+      SELECT * 
+         FROM (
+         SELECT Codigo
+         FROM INSUMO
+         ORDER BY dbms_random.random)
+      INTO CodInsu
+      WHERE  rownum < 2;
+
+   RETURN CodInsu;
+
 END;
