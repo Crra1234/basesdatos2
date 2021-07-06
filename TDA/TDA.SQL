@@ -23,27 +23,27 @@ END;
 Create or Replace TYPE Existencia as Object (
    Cant_real NUMBER,
    Cant_necesaria NUMBER,
-   Static Function get_Porcentaje return NUMBER,
-   Static Function get_Restante return NUMBER
+   MEMBER Function get_Porcentaje return NUMBER,
+   MEMBER Function get_Restante return NUMBER
 );
 
 Create or Replace Type Body Existencia as
-   Static Function get_Porcentaje return NUMBER
+   Porcentaje Number;
+   MEMBER Function get_Porcentaje return NUMBER
    IS
    BEGIN
       porcentaje:= (Cant_real * 100) / Cant_necesaria;
       return porcentaje;
    END;
-END;
-
-Create or Replace Type Body Existencia as
-   Static Function get_Restante return NUMBER
+   MEMBER Function get_Restante return NUMBER
    IS
+      Restante NUMBER;
    BEGIN
       restante:= (Cant_necesaria - Cant_real);
       return restante;
    END;
 END;
+
 
 ------------------------ TDA UBICACION ------------------------
 Create or Replace TYPE Ubicacion as Object (

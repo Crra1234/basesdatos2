@@ -127,6 +127,7 @@ IS
    Estatus VARCHAR2(20);
    Fecha_Inicio DATE;
    Fecha_Final DATE;
+   Random_Financia NUMBER;
 BEGIN
     --Se define una cantidad aleatoria que vale el suministro generico-
     SELECT DBMS_RANDOM.value(25,100) INTO Randomprice
@@ -176,11 +177,16 @@ BEGIN
     SELECT NVL(MAX(P.CODIGO), 1) INTO Codigo_Temp FROM PEDIDO P;
     Codigo_temp := Codigo_Temp+1;
 
+
+    
+    SELECT DBMS_RANDOM.value(0,100) INTO Random_Financia
+    FROM dual;
+
     --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 0) THEN
-        INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,Suministro,null,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
+        INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,Suministro,null,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria),Random_Financia);
     ELSE 
-        INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,null,Suministro,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
+        INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,null,Suministro,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria),Random_Financia);
     END IF;
 END;
 

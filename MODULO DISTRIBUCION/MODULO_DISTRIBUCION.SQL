@@ -25,7 +25,7 @@ BEGIN
          ELSE
             DBMS_OUTPUT.PUT_LINE('Llama al modulo de pedido');
 
-            --REALIZAR_PEDIDO(CodSumi, CodArea, NomSumi, CodCen)
+            REALIZAR_PEDIDO(CodSumi, CodArea, NomSumi, CodCen);
             --Llama al modulo de pepido (Flujo 4.3.2)
          END IF;
 
@@ -59,7 +59,6 @@ BEGIN
       END IF;
 
    END IF;
-
 END;
 
 --
