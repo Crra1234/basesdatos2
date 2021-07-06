@@ -118,7 +118,7 @@ END;
 
 
 -------------PROCEDIMIENTO AGREGAR PEDIDOS---------------------------------
-CREATE OR REPLACE PROCEDURE ADD_PEDIDO(Suministro NUMBER,Lugar NUMBER,Cant_Necesaria NUMBER,Cant_real,Flag Number,Status_Flag Number) 
+CREATE OR REPLACE PROCEDURE ADD_PEDIDO(Suministro NUMBER,Lugar NUMBER,Cant_Necesaria NUMBER,Cant_real NUMBER,Flag Number,Status_Flag Number) 
 IS
    Randomprice NUMBER; 
    Organizacion NUMBER;
@@ -135,36 +135,35 @@ BEGIN
     
     --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 1) THEN
-        SELECT  * FROM(
+        SELECT  * INTO Organizacion 
+        FROM(
             SELECT  v.Organizacion 
             FROM VA_OR v 
             WHERE v.Vacuna=Suministro
             ORDER BY dbms_random.random)
-        INTO Organizacion
-        ROWNUM <2;
+        WHERE ROWNUM <2;
     ELSE 
-        SELECT * FROM(
+        SELECT * INTO Organizacion 
+        FROM (
             SELECT Codigo 
             FROM ORGANIZACION
             ORDER BY dbms_random.random)
-        INTO Organizacion
-        ROWNUM <2;
+        WHERE ROWNUM <2;
     END IF;
-
-    SELECT MAX(Codigo) into Codigo_Temp from PEDIDO;
     
     IF (Status_Flag = 1) THEN
         Estatus:= 'ENVIADO';
 
         SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-01-01','J'),TO_CHAR(DATE '2021-03-01','J'))),'J')  
-        INTO FechaInicio 
+        INTO Fecha_Inicio 
         FROM DUAL;
 
         SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
-        INTO FechaFinal 
+        INTO Fecha_Final 
         FROM DUAL;
     ELSE
         Estatus:= 'EN PROCESO';
+
         SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J')  
         INTO Fecha_Inicio 
         FROM DUAL;
@@ -174,14 +173,15 @@ BEGIN
         FROM DUAL;
     END IF;
 
-
+    SELECT NVL(MAX(P.CODIGO), 1) INTO Codigo_Temp FROM PEDIDO P;
+    Codigo_temp := Codigo_Temp+1;
 
     --Si es 0, es insumo. En caso contrario, es vacuna--
     IF (FLAG = 0) THEN
         INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,Suministro,null,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
     ELSE 
-        INSERT INTO PEDIDO VALUES (Codigo_Temp,Organizacion,MontTotal,Estatus,null,Suministro,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
-     END IF;
+        INSERT INTO PEDIDO VALUES (Codigo_Temp,Lugar,Organizacion,MontTotal,Estatus,null,Suministro,Fecha(Fecha_Inicio,Fecha_Final),Existencia(Cant_real,Cant_Necesaria));
+    END IF;
 END;
 
 
@@ -293,6 +293,7 @@ BEGIN
         WHERE  rownum < 2;
 
        ------INSERT CORRESPONDIENTE AL INSUMO CON EL CUAL CUENTA EL CENTRO DE SALUD EN SU INVENTARIO
+      
        INSERT INTO INVENTARIO VALUES(Centro,CodInsum,Existencia(CantReal,CantNec));
     END LOOP;
     
@@ -308,6 +309,7 @@ IS
     FechaFin Date;
     FechaInicio Date;
     NumAlt Number;
+    Codigo_Temp NUMBER;
     
     -----CURSOR QUE CONTIENE LOS DATOS DE UN PACIENTES ALEATORIO CORRESPONDIENTE AL AREA (EQUIVALENTE AL 25% DE LOS HABITANTES DE ESA AREA) -----
     CURSOR Pacientes is 
@@ -342,16 +344,13 @@ BEGIN
         ORDER BY dbms_random.random
         )
         WHERE rownum<2;
-        
-   
-        --SE SELECCIONO ALEATORIAMENTE UNA FECHA EN EL INTERVALO EN EL QUE FINALIZO EL BROTE EN EL AREA, PARA LA VACUNACION--
-        SELECT TO_DATE(TRUNC(DBMS_RANDOM.VALUE(TO_CHAR(DATE '2021-03-01','J'),TO_CHAR(DATE '2021-07-01','J'))),'J') 
-        INTO FechaInicio
-        FROM DUAL;
-        
-        
-        -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
-        INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaInicio,null));
+
+        SELECT NVL(MAX(V.CODIGO), 1) INTO Codigo_Temp FROM Vacunacion V;
+        Codigo_temp := Codigo_Temp+1;
+        -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS, con fecha 1 mes antes de la fecha actual
+        INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(SYSDATE,-1),NULL));
+        Codigo_temp := Codigo_Temp+1;
+        INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(SYSDATE,NULL));
 
 
     END LOOP;
@@ -499,7 +498,7 @@ BEGIN
         
             -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
             INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(FechaVac,Null));
-            GENERAR_EFECTOS_SECUNDARIOS(CodVac, CodCent, CodPac, FECHA.Fecha_inicial);
+            --GENERAR_EFECTOS_SECUNDARIOS(CodVac, CodCent, CodPac, FECHA.Fecha_inicio);
 
             --ASIGNACION DE LA SEGUNDA DOSIS PARA EL PACIENTE
             INSERT INTO VACUNACION VALUES(CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
@@ -556,66 +555,64 @@ BEGIN
 
 END;
 
-CREATE OR REPLACE FUNCTION CREATE_PEDIDO_INVENTARIO(Area NUMBER,Insumo NUMBER) return NUMBER
+--Se hace cuenta los suministros de los centro de vacunacion de un area, con un insumo determinado--
+CREATE OR REPLACE FUNCTION CREATE_PEDIDO_INVENTARIO(Area NUMBER,Insumo_ext NUMBER) return NUMBER
 IS
     CodCentro NUMBER;
     Total_Insumos NUMBER;
     Parcial_insumos NUMBER;
 
-    CURSOR Centro is 
-    SELECT Codigo 
-    FROM CENTRO_VACUNACION
-    WHERE Lugar=Area;
-
 BEGIN
-    Total_Insumos=0;
-    OPEN Centro;
-    LOOP  
-       FETCH Centro INTO CodCentro;
-       EXIT WHEN Centro%NOTFOUND;
+    Total_Insumos:=0;
 
-        SELECT I.Cantidad.Cant_real into Parcial_insumos
-        FROM Inventario I
-        WHERE I.Centro=CodCentro;
+    SELECT distinct i.centro into CodCentro
+    FROM INVENTARIO i,CENTRO_VACUNACION c 
+    WHERE i.Centro = c.Codigo
+    AND c.Lugar=Area AND i.Insumo=Insumo_ext;
 
-        Total_Insumos := Parcial_insumos + Total_Insumos;
+    SELECT I.Cantidad.Cant_real into Parcial_insumos
+    FROM Inventario I
+    WHERE I.Centro=CodCentro AND I.Insumo=Insumo_ext;
 
-    END LOOP;
-    CLOSE Centro;
+    Total_Insumos := Parcial_insumos + Total_Insumos;
 
     RETURN Total_Insumos;
+
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RETURN 0;
 END;
 
-CREATE OR REPLACE FUNCTION CREATE_PEDIDO_DOSIS(Area NUMBER,Vacuna NUMBER) return NUMBER
+--Se hace cuenta los suministros de los centro de vacunacion de un area, con una vacuna determinada--
+CREATE OR REPLACE FUNCTION CREATE_PEDIDO_DOSIS(Area NUMBER,Vacuna_ext NUMBER) return NUMBER
 IS
     CodCentro NUMBER;
     Total_Vacuna NUMBER;
-    Parcial_Vacuna NUMBER;
+    Parcial_Vacuna Existencia;
 
-    CURSOR Centro is 
-    SELECT Codigo 
-    FROM CENTRO_VACUNACION
-    WHERE Lugar=Area;
 
 BEGIN
-    Total_Vacuna=0;
-    OPEN Centro;
-    LOOP  
-       FETCH Centro INTO CodCentro;
-       EXIT WHEN Centro%NOTFOUND;
+    Total_Vacuna:=0;
 
-        SELECT D.Cantidad.Cant_real into Parcial_Vacuna
-        FROM DOSIS D
-        WHERE D.Centro=CodCentro;
+    SELECT distinct d.centro into CodCentro
+    FROM Dosis d,CENTRO_VACUNACION c 
+    WHERE d.Centro = c.Codigo
+    AND c.Lugar=Area and d.Vacuna=Vacuna_ext;
 
-        Total_Vacuna := Parcial_Vacuna + Total_Vacuna;
+    SELECT D.Cantidad into Parcial_Vacuna
+    FROM DOSIS D
+    WHERE D.Centro=CodCentro and d.Vacuna=Vacuna_ext;
 
-    END LOOP;
-    CLOSE Centro;
+        Total_Vacuna := Parcial_Vacuna.Cant_real + Total_Vacuna;
 
     RETURN Total_Vacuna;
+
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RETURN 0;
 END;
 
+--Se realizan los pedidos para el pais suministrado--
 CREATE OR REPLACE PROCEDURE CREATE_PEDIDO(Pais NUMBER) 
 IS
     CodInsumo NUMBER;
@@ -647,7 +644,7 @@ BEGIN
     LOOP
          FETCH INSUMOS INTO CodInsumo;
          EXIT WHEN INSUMOS%NOTFOUND;
-         Total_Existencia=0;
+         Total_Existencia:=0;
 
         --Se hace otro loop para encontrar la cantidad total de los insumos en un area--
         OPEN Area;
@@ -658,6 +655,7 @@ BEGIN
                 Total_Existencia:= Total_Existencia + Parcial_Existencia;
             END LOOP;
         CLOSE Area;
+
         IF (Total_Existencia != 0) THEN
 
             SELECT DBMS_RANDOM.value(50,100) INTO NumRandom
@@ -680,14 +678,14 @@ BEGIN
     LOOP
          FETCH VACUNA INTO CodVacuna;
          EXIT WHEN VACUNA%NOTFOUND;
-         Total_Existencia=0;
+         Total_Existencia:=0;
 
         --Se hace otro loop para encontrar la cantidad total de las dosis en un area--
         OPEN Area;
             LOOP
                 FETCH Area INTO CodArea;
                 EXIT WHEN AREA%NOTFOUND;
-                Parcial_Existencia:= CREATE_PEDIDO_DOSIS(CodArea,CodVac);
+                Parcial_Existencia:= CREATE_PEDIDO_DOSIS(CodArea,CodVacuna);
                 Total_Existencia:= Total_Existencia + Parcial_Existencia;
             END LOOP;
         CLOSE Area;
@@ -708,12 +706,38 @@ BEGIN
     CLOSE VACUNA;
 
 END;
+
+--Se realizan los pedidos para todos los paises--
+CREATE OR REPLACE PROCEDURE CREATE_PEDIDO_POR_PAIS
+IS
+    CodPais NUMBER;
+
+    CURSOR Paises is 
+    SELECT distinct p.Codigo 
+    FROM Lugar p,Lugar a,Inventario I,CENTRO_VACUNACION c
+    WHERE a.Lugar=p.Codigo AND a.Codigo=c.Lugar AND c.Codigo=i.Centro;
+
+    
+BEGIN
+
+    OPEN PAISES;
+    LOOP
+        FETCH PAISES INTO CodPais;
+        EXIT WHEN PAISES%NOTFOUND;
+        CREATE_PEDIDO(CodPais);
+
+    END LOOP;
+    CLOSE PAISES;
+
+END;
+
 ---------------PROCEDIMIENTO DE CENTROS POR AREA--------------------------
 
 CREATE OR REPLACE PROCEDURE CENTRO_POR_AREA
 IS
     Areas varrays2:=varrays2();
     Centros varrays:= varrays();
+    Pais NUMBER;
     counter NUMBER :=0; 
     counter2 NUMBER :=0; 
     Centro NUMBER;
@@ -723,18 +747,17 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('------------------CENTROS DE VACUNACIÓN--------------------------');
     FOR x IN 1..Areas.COUNT LOOP
         FOR j IN 1..Areas(x).COUNT LOOP
+
             counter:= counter +1;
             Centros.extend;
             Centro:=SELECCION_CENTRO(Areas(x)(j));
+            DBMS_OUTPUT.PUT_LINE('--Centro:'|| Centro ||  '--');
             Centros(counter):= Centro;
             ADD_INSUMOS(Centro);
             ADD_DOSIS(Centro);
-            PACIENTES_POR_AREA(Areas(x)(j));
-            --Asignacion_lista_espera(Areas(x)(j));
+            Asignacion_lista_espera(Areas(x)(j));
             --Asignacion_Vacunacion(Areas(x)(j));
         END LOOP;
     END LOOP;
 END;
-
-
 

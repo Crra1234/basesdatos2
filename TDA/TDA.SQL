@@ -50,5 +50,5 @@ Create or Replace TYPE Ubicacion as Object (
    Localizacion NUMBER,
    Mapa BLOB,
    Static Function get_Direccion return VARCHAR2,
-   Static Function get_Mapa return 
+   Static Function get_Mapa return BLOB
 );
