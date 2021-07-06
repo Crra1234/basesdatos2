@@ -357,9 +357,10 @@ BEGIN
     CLOSE Pacientes;
 END;
 
-CREATE OR REPLACE PROCEDURE Resta_recursos(CodVac NUMBER,CodGuantes NUMBER,CodJeringas NUMBER,CodAlcohol NUMBER, CodAlgodon NUMBER,CodCentro NUMBER)
+CREATE OR REPLACE PROCEDURE Resta_recursos(CodVac NUMBER,CodCentro NUMBER)
 IS
     CANT_SUMINISTRO NUMBER;
+    Temp_Variable NUMBER;
 
 BEGIN
     SELECT d.Cantidad.Cant_real INTO CANT_SUMINISTRO
@@ -369,29 +370,110 @@ BEGIN
     UPDATE Dosis d SET d.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE d.Vacuna=CodVac;
 
     SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
-    FROM Inventario I
-    WHERE I.Centro=CodCentro AND I.Insumo=CodGuantes;
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Guantes';
+    
+    SELECT I.Insumo INTO Temp_Variable
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Guantes';
 
-    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodGuantes;
-
-    SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
-    FROM Inventario I
-    WHERE I.Centro=CodCentro AND I.Insumo=CodJeringas;
-
-    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodJeringas;
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE I.Centro=CodCentro AND I.Insumo=Temp_Variable;
 
     SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
-    FROM Inventario I
-    WHERE I.Centro=CodCentro AND I.Insumo=CodAlcohol;
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Jeringas';
+    
+    SELECT I.Insumo INTO Temp_Variable
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Jeringas';
 
-    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodAlcohol;
-
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE I.Centro=CodCentro AND I.Insumo=Temp_Variable;
     SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
-    FROM Inventario I
-    WHERE I.Centro=CodCentro AND I.Insumo=CodAlgodon;
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Alcohol';
+    
+    SELECT I.Insumo INTO Temp_Variable
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Alcohol';
 
-    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE i.Insumo=CodAlgodon;
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE I.Centro=CodCentro AND I.Insumo=Temp_Variable;
+    SELECT I.Cantidad.Cant_real INTO CANT_SUMINISTRO
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Algodon';
+    
+    SELECT I.Insumo INTO Temp_Variable
+    FROM Inventario I,Insumo INS
+    WHERE I.Centro=CodCentro AND I.Insumo=INS.Codigo AND INS.Tipo='Algodon';
 
+    UPDATE Inventario i SET i.Cantidad.Cant_real=CANT_SUMINISTRO-1 WHERE I.Centro=CodCentro AND I.Insumo=Temp_Variable;
+
+
+END;
+
+CREATE OR REPLACE FUNCTION Comprobacion_Recursos(CodCent NUMBER) RETURN NUMBER
+IS
+CodGuantes NUMBER;
+CodJeringas NUMBER;
+CodAlcohol NUMBER; 
+CodAlgodon NUMBER;
+BEGIN
+SELECT Count(I.Insumo) INTO CodGuantes
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Guantes'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+                --Se selecciona el codigo de insumo de el insumo tipo "Jeringas" que tenga el centro.--
+                SELECT Count(I.Insumo) INTO CodJeringas
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Jeringas'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+                --Se selecciona el codigo de insumo de el insumo tipo 'Alcohol' que tenga el centro.--
+                SELECT Count(I.Insumo) INTO CodAlcohol
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Alcohol'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+                --Se selecciona el codigo de insumo de el insumo tipo 'Algodon' que tenga el centro.--
+                SELECT Count(I.Insumo) INTO CodAlgodon
+                FROM INVENTARIO I, INSUMO INS
+                WHERE 
+                I.Centro=CodCent 
+                and 
+                INS.Codigo=I.Insumo
+                and
+                INS.TIPO='Algodon'
+                and
+                (I.Cantidad.Cant_real > 0)
+                ORDER BY dbms_random.random;
+
+
+                IF (CodGuantes=0) OR (CodJeringas=0) OR (CodAlcohol=0) OR (CodAlgodon=0) THEN 
+                    RETURN 0;
+                ELSE
+                    RETURN 1;
+                END IF;
 END;
 
 --Procedimiento para generar efecto secundario al paciente vacunado (Flujo 6.3.3.3.2.3.1)
@@ -448,11 +530,6 @@ IS
     Preferencia Number;
     Cant_Necesaria NUMBER;
     Codigo_Temp NUMBER;
-
-    CodGuantes NUMBER;
-    CodJeringas NUMBER;
-    CodAlcohol NUMBER;
-    CodAlgodon NUMBER;
     NumRand NUMBER;
     
     
@@ -476,13 +553,66 @@ BEGIN
         FETCH Pacientes INTO CodPac;
         EXIT WHEN Pacientes%notfound; 
         
-        SELECT NVL(V.Paciente,-1) INTO NumAlt
+        SELECT count(V.PACIENTE) INTO NumAlt
         FROM VACUNACION V WHERE V.Paciente=CodPac;
         
         DBMS_OUTPUT.PUT_LINE('---------------------PACIENTES VACUNADOS------------------------');
         --Se verifica si el paciente ya esta asignado a una lista de espera--
-        IF (NumAlt != -1) THEN
-            select codigo into codcent from CENTRO_VACUNACION;
+        IF (NumAlt != 0) THEN
+            select MAX(V.Periodo.Fecha_inicio) into FechaVac
+            FROM VACUNACION V where V.Paciente=CodPac;
+
+            IF (FechaVac = SYSDATE) THEN
+                SELECT Count(D.Vacuna) INTO  CodVac
+                FROM Dosis D
+                WHERE
+                D.CENTRO=CodCent
+                AND
+                (D.Cantidad.Cant_real > 0);
+                
+
+                IF (CodVac= 0) OR (Comprobacion_Recursos(CodCent)=0) THEN                   
+                    
+                    --ASIGNACION DE OTRA FECHA DE VACUNACIÓN DEBIDO A QUE NO HAY RECURSOS DISPONIBLE              
+                    SELECT DBMS_RANDOM.value(1,27) INTO NumAlt
+                    FROM dual;
+
+                    -- Cambio de 4 meses a 1 FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 4);                   
+                    FechaVac := ADD_MONTHS(SYSDATE + NumAlt, 1);
+
+                    select MAX(v.Codigo) into CodVac
+                    FROM VACUNACION v where v.Paciente=CodPac;
+
+                    SELECT DBMS_RANDOM.value(0,27) INTO NumAlt
+                    FROM dual;
+                    
+                    FechaVac:=SYSDATE+NumAlt;
+                    UPDATE VACUNACION v SET v.Periodo= Fecha(ADD_MONTHS(FechaVac,4),Null) WHERE  v.Vacuna=CodVac;
+
+                    CONTINUE;
+                else
+                    SELECT * INTO CodVac
+                    FROM (
+                    SELECT d.Vacuna as Vaccine
+                    FROM Dosis d
+                    WHERE 
+                    d.Centro=CodCent 
+                    and 
+                    (d.Cantidad.Cant_real > 0)
+                    ORDER BY dbms_random.random
+                    )
+                    WHERE rownum<2;
+
+                    select MAX(v.Periodo.Fecha_inicio) into FechaVac
+                    FROM VACUNACION v where v.Paciente=CodPac;
+                    Codigo_temp:=Codigo_temp+1;
+                    Resta_recursos(CodVac,CodCent);
+                    GENERAR_EFECTOS_SECUNDARIOS(Codigo_temp,CodVac,CodCent, CodPac,ADD_MONTHS(FechaVac,1));
+
+                END IF;
+            ELSE
+            CONTINUE;
+            END IF;
         
         ELSE 
             --Se selecciona aleatoriamente si el paciente tiene preferencia o no, 1 siginifica que si tiene, 0 significa lo contrario--
@@ -537,7 +667,7 @@ BEGIN
             ELSE
             
                 --Se selecciona una vacuna aleatoria que dispone el centro de vacunacion del area-- (6.3.3.3.1)
-                SELECT NVL(Vaccine,-1) INTO CodVac
+                SELECT Count(Vaccine) INTO CodVac
                 FROM (
                 SELECT d.Vacuna as Vaccine
                 FROM Dosis d
@@ -552,59 +682,7 @@ BEGIN
             
             END IF;
 
-            --Se selecciona el codigo de insumo de el insumo tipo "Guante" que tenga el centro.--
-                SELECT NVL(I.Insumo,-1) INTO CodGuantes
-                FROM INVENTARIO I, INSUMO INS
-                WHERE 
-                I.Centro=CodCent 
-                and 
-                INS.Codigo=I.Insumo
-                and
-                INS.TIPO='Guantes'
-                and
-                (I.Cantidad.Cant_real > 0)
-                ORDER BY dbms_random.random;
-
-                --Se selecciona el codigo de insumo de el insumo tipo "Jeringas" que tenga el centro.--
-                SELECT NVL(I.Insumo,-1) INTO CodJeringas
-                FROM INVENTARIO I, INSUMO INS
-                WHERE 
-                I.Centro=CodCent 
-                and 
-                INS.Codigo=I.Insumo
-                and
-                INS.TIPO='Jeringas'
-                and
-                (I.Cantidad.Cant_real > 0)
-                ORDER BY dbms_random.random;
-
-                --Se selecciona el codigo de insumo de el insumo tipo 'Alcohol' que tenga el centro.--
-                SELECT NVL(I.Insumo,-1) INTO CodAlcohol
-                FROM INVENTARIO I, INSUMO INS
-                WHERE 
-                I.Centro=CodCent 
-                and 
-                INS.Codigo=I.Insumo
-                and
-                INS.TIPO='Alcohol'
-                and
-                (I.Cantidad.Cant_real > 0)
-                ORDER BY dbms_random.random;
-
-                --Se selecciona el codigo de insumo de el insumo tipo 'Algodon' que tenga el centro.--
-                SELECT NVL(I.Insumo,-1) INTO CodAlgodon
-                FROM INVENTARIO I, INSUMO INS
-                WHERE 
-                I.Centro=CodCent 
-                and 
-                INS.Codigo=I.Insumo
-                and
-                INS.TIPO='Algodon'
-                and
-                (I.Cantidad.Cant_real > 0)
-                ORDER BY dbms_random.random;
-
-                IF (CodVac= -1) OR (CodGuantes= -1) OR (CodJeringas= -1) OR (CodAlcohol= -1) OR (CodAlgodon= -1) THEN                   
+                IF (CodVac= 0) OR (Comprobacion_Recursos(CodCent)=0)  THEN                   
                     
                     --ASIGNACION DE OTRA FECHA DE VACUNACIÓN DEBIDO A QUE NO HAY RECURSOS DISPONIBLE              
                     SELECT DBMS_RANDOM.value(1,27) INTO NumAlt
@@ -622,15 +700,27 @@ BEGIN
                     CONTINUE;
 
                     --SUMINISTROS_DISPONIBLES(Codarea,CodCent,CodVac);
-                    
+                ELSE
+                    SELECT * INTO CodVac
+                    FROM (
+                    SELECT d.Vacuna as Vaccine
+                    FROM Dosis d
+                    WHERE 
+                    d.Centro=CodCent 
+                    and 
+                    (d.Cantidad.Cant_real > 0)
+                    ORDER BY dbms_random.random
+                    )
+                    WHERE rownum<2;
+
                 END IF;
 
 
-                SELECT NVL(I.Paciente,-1) into NumAlt
+                SELECT Count(I.Paciente) into NumAlt
                 FROM INFECCION I WHERE I.Paciente=CodPac;
             
             --Se establecen las prioridades en el variable de preferencia, si esta infectado se vacuna en menos de un mes, si es anciano, se vacuna en un mes, si es adulto, se vacuna en 2 meses, y si es joven, en 3 meses.
-            IF (NumAlt = -1) THEN
+            IF (NumAlt != 0) THEN
                 Preferencia := 0;
             ELSE
                 SELECT p.GRUPO_ETARIO into Grupoetario
@@ -659,17 +749,11 @@ BEGIN
 
             -----ASIGNACION DE LISTA DE ESPERA A ESOS 2 PACIENTES ALEATORIOS
             INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(FechaVac,Null));
-            Resta_recursos(CodVac,CodGuantes,CodJeringas,CodAlcohol,CodAlgodon,CodCent);
-            SELECT DBMS_RANDOM.value(0,13) INTO NumAlt FROM dual;
-            SELECT DBMS_RANDOM.value(13,27) INTO NumRand FROM dual;
+            Resta_recursos(CodVac,CodCent);
             GENERAR_EFECTOS_SECUNDARIOS(Codigo_temp,CodVac,CodCent, CodPac,FechaVac);
-
+            Codigo_temp := Codigo_Temp+1;
             --ASIGNACION DE LA SEGUNDA DOSIS PARA EL PACIENTE
             INSERT INTO VACUNACION VALUES(Codigo_Temp,CodVac,CodCent,CodPac,FECHA(ADD_MONTHS(FechaVac,1),ADD_MONTHS(FechaVac,1)));
-            Resta_recursos(CodVac,CodGuantes,CodJeringas,CodAlcohol,CodAlgodon,CodCent);
-            SELECT DBMS_RANDOM.value(0,13) INTO NumAlt FROM dual;
-            SELECT DBMS_RANDOM.value(13,27) INTO NumRand FROM dual;
-            GENERAR_EFECTOS_SECUNDARIOS(Codigo_temp,CodVac,CodCent, CodPac,ADD_MONTHS(FechaVac,1));
             
             
         END IF;
