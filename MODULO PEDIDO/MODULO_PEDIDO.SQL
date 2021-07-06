@@ -275,7 +275,41 @@ BEGIN
 
 END;
 
+CREATE OR REPALCE PERTENENCIA_COVAX(CodPais NUMBER) RETURN NUMBER
+IS
+Pertenencia NUMBER;
+BEGIN
+   SELECT
+         CASE
+            WHEN  'COVAX' < ANY (SELECT o.Nombre 
+                  FROM ORGANIZACION o, p PEDIDO 
+                  WHERE o.Codigo = p.Organizacion
+                  AND p.Lugar = CodPais) THEN 1 
+            ELSE 0
+   INTO Pertenencia
+   FROM Dual;
 
+   RETURN Pertenencia;
+END;
+
+CREATE OR REPLACE VERIFICAR_RESTRICCIONES(CodPais) RETURN VARCHAR
+IS
+RestLocal VARCHAR2(100);
+BEGIN
+   SELECT r.Descripcion
+   INTO RestriccionLocal
+   FROM RESTRICCION_LOCAL r
+   WHERE r.Codigo = (SELECT e.Restriccion
+                     FROM EXCLUSION e
+                     WHERE e.Lugar = CodPais
+                     AND e.Fecha.Fecha_Fin IS NULL);
+   RETURN RestLocal;
+
+   EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+      RETURN NULL;
+
+END;
 
 --Se verifica si el país esta finaciado completamente
 CREATE OR REPLACE FUNCTION VERIFICAR_FINANCIAMIENTO(CodPais) RETURN INTEGER
